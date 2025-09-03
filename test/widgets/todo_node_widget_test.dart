@@ -43,7 +43,8 @@ void main() {
     testWidgets('shows node at correct position', (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget(testNode));
 
-      final positioned = tester.widget<Positioned>(find.byType(Positioned));
+      // Find the first Positioned widget (the main container, not the resize handle)
+      final positioned = tester.widget<Positioned>(find.byType(Positioned).first);
       expect(positioned.left, equals(20.0)); // 50 - 60/2
       expect(positioned.top, equals(20.0)); // 50 - 60/2
     });
@@ -55,13 +56,13 @@ void main() {
       // Find the TodoNodeWidget
       expect(find.byType(TodoNodeWidget), findsOneWidget);
       
-      // Verify the gesture detector is present
-      final gestureDetector = find.descendant(
+      // Verify there are gesture detectors present (main + resize handle)
+      final gestureDetectors = find.descendant(
         of: find.byType(TodoNodeWidget),
         matching: find.byType(GestureDetector),
       );
       
-      expect(gestureDetector, findsOneWidget);
+      expect(gestureDetectors, findsWidgets);
       
       // Just verify the basic structure is correct without triggering animations
       expect(find.text('Test Task'), findsOneWidget);
@@ -198,10 +199,10 @@ void main() {
       
       // Check if any shadow has green color (glow effect) - check RGB values only
       final hasGlowShadow = decoration.boxShadow!.any(
-        (shadow) => shadow.color.red == Colors.green.red && 
-                    shadow.color.green == Colors.green.green &&
-                    shadow.color.blue == Colors.green.blue &&
-                    shadow.color.alpha > 0,
+        (shadow) => (shadow.color.r * 255.0).round() == (Colors.green.r * 255.0).round() && 
+                    (shadow.color.g * 255.0).round() == (Colors.green.g * 255.0).round() &&
+                    (shadow.color.b * 255.0).round() == (Colors.green.b * 255.0).round() &&
+                    (shadow.color.a * 255.0).round() > 0,
       );
       expect(hasGlowShadow, isTrue);
     });

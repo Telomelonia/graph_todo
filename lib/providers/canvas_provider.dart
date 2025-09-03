@@ -14,8 +14,10 @@ class CanvasProvider with ChangeNotifier {
 
   // Interaction state
   bool _isConnectMode = false;
+  bool _isNodeCreateMode = false;
   String? _selectedNodeForConnection;
   TodoNode? _draggedNode;
+  String? _selectedNodeId;
 
   // Getters
   List<TodoNode> get nodes => List.unmodifiable(_nodes);
@@ -23,8 +25,10 @@ class CanvasProvider with ChangeNotifier {
   Offset get panOffset => _panOffset;
   double get scale => _scale;
   bool get isConnectMode => _isConnectMode;
+  bool get isNodeCreateMode => _isNodeCreateMode;
   String? get selectedNodeForConnection => _selectedNodeForConnection;
   TodoNode? get draggedNode => _draggedNode;
+  String? get selectedNodeId => _selectedNodeId;
 
   // Add a new node at the given position
   void addNode(Offset position, {String text = 'New Task'}) {
@@ -52,6 +56,59 @@ class CanvasProvider with ChangeNotifier {
     if (index != -1) {
       _nodes[index] = _nodes[index].copyWith(position: newPosition);
       notifyListeners();
+    }
+  }
+
+  // Update node size
+  void updateNodeSize(String nodeId, double newSize) {
+    final index = _nodes.indexWhere((node) => node.id == nodeId);
+    if (index != -1) {
+      // Constrain size between reasonable bounds
+      final constrainedSize = newSize.clamp(30.0, 150.0);
+      _nodes[index] = _nodes[index].copyWith(size: constrainedSize);
+      notifyListeners();
+    }
+  }
+
+  // Increase node size
+  void increaseNodeSize(String nodeId) {
+    final index = _nodes.indexWhere((node) => node.id == nodeId);
+    if (index != -1) {
+      final currentSize = _nodes[index].size;
+      updateNodeSize(nodeId, currentSize + 10.0);
+    }
+  }
+
+  // Decrease node size
+  void decreaseNodeSize(String nodeId) {
+    final index = _nodes.indexWhere((node) => node.id == nodeId);
+    if (index != -1) {
+      final currentSize = _nodes[index].size;
+      updateNodeSize(nodeId, currentSize - 10.0);
+    }
+  }
+
+  // Node selection for keyboard shortcuts
+  void selectNode(String nodeId) {
+    _selectedNodeId = nodeId;
+    notifyListeners();
+  }
+
+  void clearNodeSelection() {
+    _selectedNodeId = null;
+    notifyListeners();
+  }
+
+  // Keyboard shortcuts for selected node
+  void increaseSelectedNodeSize() {
+    if (_selectedNodeId != null) {
+      increaseNodeSize(_selectedNodeId!);
+    }
+  }
+
+  void decreaseSelectedNodeSize() {
+    if (_selectedNodeId != null) {
+      decreaseNodeSize(_selectedNodeId!);
     }
   }
 
@@ -91,12 +148,30 @@ class CanvasProvider with ChangeNotifier {
   void toggleConnectMode() {
     _isConnectMode = !_isConnectMode;
     _selectedNodeForConnection = null;
+    if (_isConnectMode) {
+      _isNodeCreateMode = false; // Turn off create mode when entering connect mode
+    }
     notifyListeners();
   }
 
   void exitConnectMode() {
     _isConnectMode = false;
     _selectedNodeForConnection = null;
+    notifyListeners();
+  }
+
+  // Node creation mode management
+  void toggleNodeCreateMode() {
+    _isNodeCreateMode = !_isNodeCreateMode;
+    if (_isNodeCreateMode) {
+      _isConnectMode = false; // Turn off connect mode when entering create mode
+      _selectedNodeForConnection = null;
+    }
+    notifyListeners();
+  }
+
+  void exitNodeCreateMode() {
+    _isNodeCreateMode = false;
     notifyListeners();
   }
 
@@ -137,16 +212,30 @@ class CanvasProvider with ChangeNotifier {
     }
   }
 
-  // Update connection golden state based on node completion
+  // Update connection states based on node completion
   void _updateConnectionStates() {
     for (int i = 0; i < _connections.length; i++) {
       final conn = _connections[i];
       final fromNode = _nodes.firstWhere((n) => n.id == conn.fromNodeId);
       final toNode = _nodes.firstWhere((n) => n.id == conn.toNodeId);
 
-      final shouldBeGolden = fromNode.isCompleted && toNode.isCompleted;
-      if (conn.isGolden != shouldBeGolden) {
-        _connections[i] = conn.copyWith(isGolden: shouldBeGolden);
+      final bothCompleted = fromNode.isCompleted && toNode.isCompleted;
+      final oneCompleted = fromNode.isCompleted || toNode.isCompleted;
+      
+      TodoConnectionState newState;
+      if (bothCompleted) {
+        newState = TodoConnectionState.golden;
+      } else if (oneCompleted) {
+        newState = TodoConnectionState.charging;
+      } else {
+        newState = TodoConnectionState.normal;
+      }
+
+      if (conn.connectionState != newState || conn.isGolden != bothCompleted) {
+        _connections[i] = conn.copyWith(
+          isGolden: bothCompleted,
+          connectionState: newState,
+        );
       }
     }
   }
@@ -177,8 +266,10 @@ class CanvasProvider with ChangeNotifier {
     _panOffset = Offset.zero;
     _scale = 1.0;
     _isConnectMode = false;
+    _isNodeCreateMode = false;
     _selectedNodeForConnection = null;
     _draggedNode = null;
+    _selectedNodeId = null;
     notifyListeners();
   }
 }

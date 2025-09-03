@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/canvas_provider.dart';
 import 'widgets/todo_node_widget.dart';
@@ -41,6 +42,19 @@ class HomePage extends StatelessWidget {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              FloatingActionButton(
+                heroTag: "add",
+                onPressed: provider.toggleNodeCreateMode,
+                backgroundColor: provider.isNodeCreateMode
+                    ? Colors.green
+                    : Colors.grey,
+                child: Icon(
+                  provider.isNodeCreateMode
+                      ? Icons.close
+                      : Icons.add,
+                ),
+              ),
+              const SizedBox(height: 10),
               FloatingActionButton(
                 heroTag: "connect",
                 onPressed: provider.toggleConnectMode,
@@ -96,10 +110,26 @@ class CanvasWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<CanvasProvider>(
       builder: (context, provider, child) {
-        return GestureDetector(
-          onTapUp: (details) {
-            // Only create new node if not in connect mode and not tapping on existing node
-            if (!provider.isConnectMode) {
+        return Focus(
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent) {
+              if (event.logicalKey == LogicalKeyboardKey.equal ||
+                  event.logicalKey == LogicalKeyboardKey.add) {
+                provider.increaseSelectedNodeSize();
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.minus) {
+                provider.decreaseSelectedNodeSize();
+                return KeyEventResult.handled;
+              } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+                provider.clearNodeSelection();
+                return KeyEventResult.handled;
+              }
+            }
+            return KeyEventResult.ignored;
+          },
+          child: GestureDetector(
+            onTapUp: (details) {
               final canvasPosition = provider.screenToCanvas(details.localPosition);
 
               // Check if tap is on any existing node
@@ -112,12 +142,16 @@ class CanvasWidget extends StatelessWidget {
                 }
               }
 
-              // Create new node if not tapping on existing node
-              if (!tappedOnNode) {
+              // Only create new node if in node create mode and not tapping on existing node
+              if (provider.isNodeCreateMode && !tappedOnNode) {
                 provider.addNode(canvasPosition);
               }
-            }
-          },
+
+              // Clear selection if tapping on empty space
+              if (!tappedOnNode) {
+                provider.clearNodeSelection();
+              }
+            },
           onPanUpdate: (details) {
             // Pan the canvas if no node is being dragged
             if (provider.draggedNode == null) {
@@ -173,9 +207,81 @@ class CanvasWidget extends StatelessWidget {
                     ),
                   ),
                 ),
+
+              // Node creation mode indicator
+              if (provider.isNodeCreateMode)
+                Positioned(
+                  top: 50,
+                  left: 20,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Click anywhere to add a new node',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Selected node size controls indicator
+              if (provider.selectedNodeId != null)
+                Positioned(
+                  top: 20,
+                  right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Node Selected',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '+/= : Increase size',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                        Text(
+                          '- : Decrease size',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                        Text(
+                          'ESC : Clear selection',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
-        );
+        ),
+      );
       },
     );
   }

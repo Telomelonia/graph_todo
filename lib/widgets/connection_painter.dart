@@ -52,39 +52,67 @@ class ConnectionPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     // Set color based on connection state
-    if (connection.isGolden) {
-      paint.color = const Color(0xFFFFD700); // Gold color
-      paint.strokeWidth = 4.0;
+    switch (connection.connectionState) {
+      case TodoConnectionState.golden:
+        paint.color = const Color(0xFFFFD700); // Gold color
+        paint.strokeWidth = 4.0;
 
-      // Add glow effect for golden connections
-      final glowPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 8.0
-        ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFFFFD700).withValues(alpha: 0.3);
+        // Add glow effect for golden connections
+        final glowPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 8.0
+          ..strokeCap = StrokeCap.round
+          ..color = const Color(0xFFFFD700).withValues(alpha: 0.3);
 
-      canvas.drawLine(connectionPoints.from, connectionPoints.to, glowPaint);
-    } else {
-      paint.color = Colors.white.withValues(alpha: 0.6);
+        canvas.drawLine(connectionPoints.from, connectionPoints.to, glowPaint);
+        break;
+        
+      case TodoConnectionState.charging:
+        paint.color = const Color(0xFF4CAF50); // Green color for charging
+        paint.strokeWidth = 3.5;
+
+        // Add subtle glow effect for charging connections
+        final chargingGlowPaint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6.0
+          ..strokeCap = StrokeCap.round
+          ..color = const Color(0xFF4CAF50).withValues(alpha: 0.4);
+
+        canvas.drawLine(connectionPoints.from, connectionPoints.to, chargingGlowPaint);
+        break;
+        
+      case TodoConnectionState.normal:
+        paint.color = Colors.white.withValues(alpha: 0.6);
+        break;
     }
 
     // Draw the main connection line
     canvas.drawLine(connectionPoints.from, connectionPoints.to, paint);
 
     // Draw small circles at connection points
-    _drawConnectionDots(canvas, connectionPoints, connection.isGolden);
+    _drawConnectionDots(canvas, connectionPoints, connection.connectionState);
   }
 
   void _drawConnectionDots(
       Canvas canvas,
       ConnectionPoints points,
-      bool isGolden,
+      TodoConnectionState state,
       ) {
     final dotPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = isGolden
-          ? const Color(0xFFFFD700)
-          : Colors.white.withValues(alpha: 0.8);
+      ..style = PaintingStyle.fill;
+
+    // Set dot color based on connection state
+    switch (state) {
+      case TodoConnectionState.golden:
+        dotPaint.color = const Color(0xFFFFD700);
+        break;
+      case TodoConnectionState.charging:
+        dotPaint.color = const Color(0xFF4CAF50);
+        break;
+      case TodoConnectionState.normal:
+        dotPaint.color = Colors.white.withValues(alpha: 0.8);
+        break;
+    }
 
     const dotRadius = 4.0;
     canvas.drawCircle(points.from, dotRadius, dotPaint);

@@ -21,6 +21,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   late Animation<double> _glowAnimation;
   final TextEditingController _textController = TextEditingController();
   bool _isEditing = false;
+  bool _isResizing = false;
 
   @override
   void initState() {
@@ -78,13 +79,14 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     if (provider.isConnectMode) {
       provider.selectNodeForConnection(widget.node.id);
     } else {
-      // Toggle completion
+      // Select node for keyboard shortcuts and toggle completion
+      provider.selectNode(widget.node.id);
       provider.toggleNodeCompletion(widget.node.id);
     }
   }
 
   void _handleDoubleTap() {
-    if (!context.read<CanvasProvider>().isConnectMode) {
+    if (!context.read<CanvasProvider>().isConnectMode && !_isResizing) {
       setState(() {
         _isEditing = true;
       });
@@ -108,34 +110,92 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
         onTap: _handleTap,
         onDoubleTap: _handleDoubleTap,
         onPanStart: (details) {
-          context.read<CanvasProvider>().startDrag(widget.node);
+          if (!_isResizing) {
+            context.read<CanvasProvider>().startDrag(widget.node);
+          }
         },
         onPanUpdate: (details) {
-          final provider = context.read<CanvasProvider>();
-          final newPosition = provider.screenToCanvas(
-            widget.node.position + details.delta,
-          );
-          provider.updateNodePosition(widget.node.id, newPosition);
+          if (!_isResizing) {
+            final provider = context.read<CanvasProvider>();
+            final newPosition = provider.screenToCanvas(
+              widget.node.position + details.delta,
+            );
+            provider.updateNodePosition(widget.node.id, newPosition);
+          }
         },
         onPanEnd: (details) {
-          context.read<CanvasProvider>().endDrag();
+          if (!_isResizing) {
+            context.read<CanvasProvider>().endDrag();
+          }
         },
         child: AnimatedBuilder(
           animation: _glowAnimation,
           builder: (context, child) {
-            return Container(
-              width: widget.node.size,
-              height: widget.node.size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: widget.node.color.withValues(alpha: 0.9),
-                border: Border.all(
-                  color: _getSelectionColor(),
-                  width: _getSelectionWidth(),
+            return Stack(
+              children: [
+                Container(
+                  width: widget.node.size,
+                  height: widget.node.size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.node.color.withValues(alpha: 0.9),
+                    border: Border.all(
+                      color: _getSelectionColor(),
+                      width: _getSelectionWidth(),
+                    ),
+                    boxShadow: _buildShadows(),
+                  ),
+                  child: _buildContent(),
                 ),
-                boxShadow: _buildShadows(),
-              ),
-              child: _buildContent(),
+                // Resize handle in bottom-right corner
+                if (!_isEditing && !context.watch<CanvasProvider>().isConnectMode)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: GestureDetector(
+                      onPanStart: (details) {
+                        setState(() {
+                          _isResizing = true;
+                        });
+                      },
+                      onPanUpdate: (details) {
+                        final provider = context.read<CanvasProvider>();
+                        // Calculate new size based on distance from center
+                        final center = Offset(widget.node.size / 2, widget.node.size / 2);
+                        final handlePosition = details.localPosition;
+                        final distance = (handlePosition - center).distance;
+                        final newSize = (distance * 2).clamp(30.0, 150.0);
+                        provider.updateNodeSize(widget.node.id, newSize);
+                      },
+                      onPanEnd: (details) {
+                        setState(() {
+                          _isResizing = false;
+                        });
+                      },
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey, width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.drag_indicator,
+                          size: 10,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             );
           },
         ),
@@ -148,6 +208,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
     if (provider.selectedNodeForConnection == widget.node.id) {
       return Colors.yellow;
+    } else if (provider.selectedNodeId == widget.node.id) {
+      return Colors.blue;
     } else if (provider.isConnectMode) {
       return Colors.white.withValues(alpha: 0.5);
     } else {
@@ -160,6 +222,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
     if (provider.selectedNodeForConnection == widget.node.id) {
       return 3.0;
+    } else if (provider.selectedNodeId == widget.node.id) {
+      return 2.0;
     } else if (provider.isConnectMode) {
       return 2.0;
     } else {
