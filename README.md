@@ -1,16 +1,26 @@
-# graph_todo
+# GraphTodo
 
-A new Flutter project.
+Interactive graph-based todo app built with Flutter. Create nodes, connect them, watch them turn gold when completed. It's giving productivity vibes but make it visual.
 
-## Getting Started
+## What it does
 
-This project is a starting point for a Flutter application.
+- Click anywhere on canvas → new todo node spawns
+- Double-click nodes → edit that text
+- Drag nodes around → reorganize your chaos
+- Toggle connection mode → link related todos
+- Complete connected todos → golden connections (chef's kiss)
 
-A few resources to get you started if this is your first Flutter project:
+## Running this thing
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+For web: `flutter run -d chrome`
+
+## Stack
+
+- Flutter + Provider for state management
+- Custom painters for the connection magic
+- No external APIs, just pure local vibes
