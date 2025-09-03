@@ -117,9 +117,9 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
         onPanUpdate: (details) {
           if (!_isResizing) {
             final provider = context.read<CanvasProvider>();
-            final newPosition = provider.screenToCanvas(
-              widget.node.position + details.delta,
-            );
+            // Convert the delta from screen coordinates to canvas coordinates
+            final canvasDelta = details.delta / provider.scale;
+            final newPosition = widget.node.position + canvasDelta;
             provider.updateNodePosition(widget.node.id, newPosition);
           }
         },
