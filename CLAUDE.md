@@ -22,6 +22,7 @@ GraphTodo is a Flutter application that implements an interactive graph-based to
 
 ### Testing and Quality
 - `flutter test` - Run unit and widget tests
+- `flutter test test/specific_test.dart` - Run a specific test file
 - `flutter analyze` - Run static analysis (lint checking)
 
 ## Architecture
@@ -68,3 +69,12 @@ Key Flutter packages used:
 - `provider ^6.1.1` - State management
 - `shared_preferences ^2.2.2` - Local storage (prepared but not yet implemented)
 - `uuid ^4.1.0` - Unique ID generation for nodes and connections
+- `flutter_lints ^3.0.0` - Dart linting rules for code quality
+
+## Testing Structure
+
+The project includes comprehensive tests organized by component type:
+- `test/models/` - Unit tests for data models (TodoNode, Connection)
+- `test/providers/` - Tests for state management (CanvasProvider)
+- `test/widgets/` - Widget tests for UI components
+- Uses standard Flutter testing framework with `flutter_test` package
