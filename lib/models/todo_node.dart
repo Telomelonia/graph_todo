@@ -24,7 +24,7 @@ class TodoNode {
       'text': text,
       'position': {'dx': position.dx, 'dy': position.dy},
       'isCompleted': isCompleted,
-      'color': color.value,
+      'color': color.toARGB32(),
       'size': size,
     };
   }

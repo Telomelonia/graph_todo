@@ -61,11 +61,11 @@ class ConnectionPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 8.0
         ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFFFFD700).withOpacity(0.3);
+        ..color = const Color(0xFFFFD700).withValues(alpha: 0.3);
 
       canvas.drawLine(connectionPoints.from, connectionPoints.to, glowPaint);
     } else {
-      paint.color = Colors.white.withOpacity(0.6);
+      paint.color = Colors.white.withValues(alpha: 0.6);
     }
 
     // Draw the main connection line
@@ -84,7 +84,7 @@ class ConnectionPainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..color = isGolden
           ? const Color(0xFFFFD700)
-          : Colors.white.withOpacity(0.8);
+          : Colors.white.withValues(alpha: 0.8);
 
     const dotRadius = 4.0;
     canvas.drawCircle(points.from, dotRadius, dotPaint);

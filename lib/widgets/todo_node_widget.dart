@@ -128,7 +128,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
               height: widget.node.size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: widget.node.color.withOpacity(0.9),
+                color: widget.node.color.withValues(alpha: 0.9),
                 border: Border.all(
                   color: _getSelectionColor(),
                   width: _getSelectionWidth(),
@@ -149,7 +149,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     if (provider.selectedNodeForConnection == widget.node.id) {
       return Colors.yellow;
     } else if (provider.isConnectMode) {
-      return Colors.white.withOpacity(0.5);
+      return Colors.white.withValues(alpha: 0.5);
     } else {
       return Colors.transparent;
     }
@@ -170,7 +170,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   List<BoxShadow> _buildShadows() {
     List<BoxShadow> shadows = [
       BoxShadow(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         blurRadius: 8.0,
         offset: const Offset(0, 4),
       ),
@@ -180,7 +180,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     if (widget.node.isCompleted) {
       shadows.add(
         BoxShadow(
-          color: Colors.green.withOpacity(0.6 * _glowAnimation.value),
+          color: Colors.green.withValues(alpha: 0.6 * _glowAnimation.value),
           blurRadius: 20.0 * _glowAnimation.value,
           spreadRadius: 5.0 * _glowAnimation.value,
         ),

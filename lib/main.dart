@@ -159,7 +159,7 @@ class CanvasWidget extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.yellow.withOpacity(0.9),
+                      color: Colors.yellow.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -191,7 +191,7 @@ class GridPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const gridSize = 50.0;
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
+      ..color = Colors.white.withValues(alpha: 0.1)
       ..strokeWidth = 1.0;
 
     // Only draw grid if scale is reasonable
