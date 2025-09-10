@@ -69,6 +69,19 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               FloatingActionButton(
+                heroTag: "eraser",
+                onPressed: provider.toggleEraserMode,
+                backgroundColor: provider.isEraserMode
+                    ? Colors.red
+                    : Colors.orange,
+                child: Icon(
+                  provider.isEraserMode
+                      ? Icons.close
+                      : Icons.cleaning_services,
+                ),
+              ),
+              const SizedBox(height: 10),
+              FloatingActionButton(
                 heroTag: "clear",
                 onPressed: () {
                   showDialog(
@@ -258,6 +271,27 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     ),
                   ),
 
+                // Eraser mode indicator
+                if (provider.isEraserMode)
+                  Positioned(
+                    top: 100,
+                    left: 20,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Click any node to delete it',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
                 // Zoom level indicator
                 Positioned(
                   bottom: 20,
@@ -278,6 +312,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     ),
                   ),
                 ),
+
               ],
             ),
           ),

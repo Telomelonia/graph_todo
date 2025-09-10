@@ -15,6 +15,7 @@ class CanvasProvider with ChangeNotifier {
   // Interaction state
   bool _isConnectMode = false;
   bool _isAddNodeMode = false;
+  bool _isEraserMode = false;
   String? _selectedNodeForConnection;
   TodoNode? _draggedNode;
   String? _newlyCreatedNodeId; // Track newly created node for immediate editing
@@ -27,6 +28,7 @@ class CanvasProvider with ChangeNotifier {
   double get scale => _scale;
   bool get isConnectMode => _isConnectMode;
   bool get isAddNodeMode => _isAddNodeMode;
+  bool get isEraserMode => _isEraserMode;
   String? get selectedNodeForConnection => _selectedNodeForConnection;
   TodoNode? get draggedNode => _draggedNode;
   String? get newlyCreatedNodeId => _newlyCreatedNodeId;
@@ -220,6 +222,23 @@ class CanvasProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Eraser mode management
+  void toggleEraserMode() {
+    _isEraserMode = !_isEraserMode;
+    // Exit other modes when entering eraser mode
+    if (_isEraserMode) {
+      _isConnectMode = false;
+      _isAddNodeMode = false;
+      _selectedNodeForConnection = null;
+    }
+    notifyListeners();
+  }
+
+  void exitEraserMode() {
+    _isEraserMode = false;
+    notifyListeners();
+  }
+
   // Handle node selection for connection
   void selectNodeForConnection(String nodeId) {
     if (!_isConnectMode) return;
@@ -305,6 +324,7 @@ class CanvasProvider with ChangeNotifier {
     _scale = 1.0;
     _isConnectMode = false;
     _isAddNodeMode = false;
+    _isEraserMode = false;
     _selectedNodeForConnection = null;
     _draggedNode = null;
     notifyListeners();

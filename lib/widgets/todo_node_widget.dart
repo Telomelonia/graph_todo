@@ -85,7 +85,10 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   void _handleTap() {
     final provider = context.read<CanvasProvider>();
 
-    if (provider.isConnectMode) {
+    if (provider.isEraserMode) {
+      // Delete the node when in eraser mode
+      provider.removeNode(widget.node.id);
+    } else if (provider.isConnectMode) {
       provider.selectNodeForConnection(widget.node.id);
     } else {
       // Toggle completion
@@ -94,7 +97,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   }
 
   void _handleDoubleTap() {
-    if (!context.read<CanvasProvider>().isConnectMode) {
+    final provider = context.read<CanvasProvider>();
+    if (!provider.isConnectMode && !provider.isEraserMode) {
       setState(() {
         _isEditing = true;
       });
@@ -177,6 +181,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
     if (provider.selectedNodeForConnection == widget.node.id) {
       return Colors.yellow;
+    } else if (provider.isEraserMode) {
+      return Colors.red;
     } else if (provider.isConnectMode) {
       return Colors.white.withValues(alpha: 0.5);
     } else {
@@ -189,6 +195,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
     if (provider.selectedNodeForConnection == widget.node.id) {
       return 3.0;
+    } else if (provider.isEraserMode) {
+      return 2.5;
     } else if (provider.isConnectMode) {
       return 2.0;
     } else {
@@ -218,6 +226,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
     return shadows;
   }
+
 
   Widget _buildContent(double scale) {
     if (_isEditing) {
