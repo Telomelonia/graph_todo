@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'providers/canvas_provider.dart';
 import 'widgets/todo_node_widget.dart';
@@ -41,51 +42,6 @@ class HomePage extends StatelessWidget {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Zoom In Button
-              FloatingActionButton(
-                heroTag: "zoomIn",
-                onPressed: () {
-                  final center = Offset(
-                    MediaQuery.of(context).size.width / 2,
-                    MediaQuery.of(context).size.height / 2,
-                  );
-                  provider.setZoom(provider.scale * 1.2, center);
-                },
-                backgroundColor: Colors.blue,
-                mini: true,
-                child: const Icon(Icons.zoom_in),
-              ),
-              const SizedBox(height: 5),
-              // Zoom Out Button
-              FloatingActionButton(
-                heroTag: "zoomOut",
-                onPressed: () {
-                  final center = Offset(
-                    MediaQuery.of(context).size.width / 2,
-                    MediaQuery.of(context).size.height / 2,
-                  );
-                  provider.setZoom(provider.scale / 1.2, center);
-                },
-                backgroundColor: Colors.blue,
-                mini: true,
-                child: const Icon(Icons.zoom_out),
-              ),
-              const SizedBox(height: 5),
-              // Reset Zoom Button
-              FloatingActionButton(
-                heroTag: "resetZoom",
-                onPressed: () {
-                  final center = Offset(
-                    MediaQuery.of(context).size.width / 2,
-                    MediaQuery.of(context).size.height / 2,
-                  );
-                  provider.setZoom(1.0, center);
-                },
-                backgroundColor: Colors.purple,
-                mini: true,
-                child: const Icon(Icons.center_focus_strong),
-              ),
-              const SizedBox(height: 10),
               FloatingActionButton(
                 heroTag: "addNode",
                 onPressed: provider.toggleAddNodeMode,
@@ -147,36 +103,53 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class CanvasWidget extends StatelessWidget {
+class CanvasWidget extends StatefulWidget {
   const CanvasWidget({super.key});
+
+  @override
+  State<CanvasWidget> createState() => _CanvasWidgetState();
+}
+
+class _CanvasWidgetState extends State<CanvasWidget> {
+  double _lastScale = 1.0;
 
   @override
   Widget build(BuildContext context) {
     return Consumer<CanvasProvider>(
       builder: (context, provider, child) {
-        return GestureDetector(
-          onTapUp: (details) {
-            // Only create new node if in add node mode and not in connect mode
-            if (!provider.isConnectMode && provider.isAddNodeMode) {
-              // Check if tap is on any existing node using proper hit detection
-              bool tappedOnNode = false;
-              for (final node in provider.nodes) {
-                if (provider.isPointOnNode(details.localPosition, node)) {
-                  tappedOnNode = true;
-                  break;
-                }
-              }
-
-              // Create new node if not tapping on existing node
-              if (!tappedOnNode) {
-                final canvasPosition = provider.screenToCanvas(details.localPosition);
-                provider.addNode(canvasPosition);
-              }
+        return Listener(
+          onPointerSignal: (pointerSignal) {
+            if (pointerSignal is PointerScrollEvent) {
+              // Handle trackpad/mouse wheel zoom
+              final delta = pointerSignal.scrollDelta.dy;
+              final zoomFactor = delta > 0 ? 0.9 : 1.1;
+              final newScale = provider.scale * zoomFactor;
+              provider.setZoom(newScale, pointerSignal.localPosition);
             }
           },
           child: GestureDetector(
+            onTapUp: (details) {
+              // Only create new node if in add node mode and not in connect mode
+              if (!provider.isConnectMode && provider.isAddNodeMode) {
+                // Check if tap is on any existing node using proper hit detection
+                bool tappedOnNode = false;
+                for (final node in provider.nodes) {
+                  if (provider.isPointOnNode(details.localPosition, node)) {
+                    tappedOnNode = true;
+                    break;
+                  }
+                }
+
+                // Create new node if not tapping on existing node
+                if (!tappedOnNode) {
+                  final canvasPosition = provider.screenToCanvas(details.localPosition);
+                  provider.addNode(canvasPosition);
+                }
+              }
+            },
             onScaleStart: (details) {
-              // Store initial state for scale gesture
+              // Store the current scale when gesture starts
+              _lastScale = provider.scale;
             },
             onScaleUpdate: (details) {
               if (details.pointerCount == 1) {
@@ -185,12 +158,14 @@ class CanvasWidget extends StatelessWidget {
                   provider.updatePanOffset(details.focalPointDelta);
                 }
               } else if (details.pointerCount == 2) {
-                // Two fingers - zoom the canvas
-                provider.zoom(details.scale, details.localFocalPoint);
+                // Two fingers - zoom the canvas with smooth scaling
+                final newScale = _lastScale * details.scale;
+                provider.setZoom(newScale, details.localFocalPoint);
               }
             },
             onScaleEnd: (details) {
-              // Reset scale gesture state
+              // Update the last scale for next gesture
+              _lastScale = provider.scale;
             },
             child: Stack(
               children: [
