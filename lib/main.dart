@@ -124,11 +124,21 @@ class _CanvasWidgetState extends State<CanvasWidget> {
             return Listener(
           onPointerSignal: (pointerSignal) {
             if (pointerSignal is PointerScrollEvent) {
-              // Handle trackpad/mouse wheel zoom
-              final delta = pointerSignal.scrollDelta.dy;
-              final zoomFactor = delta > 0 ? 0.9 : 1.1;
-              final newScale = provider.scale * zoomFactor;
-              provider.setZoom(newScale, pointerSignal.localPosition);
+              // Check if this is a trackpad pan gesture (has both x and y components)
+              // vs mouse wheel zoom (typically only has y component)
+              final deltaX = pointerSignal.scrollDelta.dx;
+              final deltaY = pointerSignal.scrollDelta.dy;
+              
+              // If there's significant horizontal movement, treat as pan
+              if (deltaX.abs() > 0.1 || (deltaX.abs() > 0 && deltaY.abs() > 0)) {
+                // Two-finger trackpad panning with reduced sensitivity
+                provider.updatePanOffset(Offset(deltaX, deltaY) * -0.5);
+              } else if (deltaY.abs() > 0.1) {
+                // Mouse wheel or single-direction trackpad zoom
+                final zoomFactor = deltaY > 0 ? 0.9 : 1.1;
+                final newScale = provider.scale * zoomFactor;
+                provider.setZoom(newScale, pointerSignal.localPosition);
+              }
             }
           },
           child: GestureDetector(
@@ -162,9 +172,15 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                   provider.updatePanOffset(details.focalPointDelta);
                 }
               } else if (details.pointerCount == 2) {
-                // Two fingers - zoom the canvas with smooth scaling
-                final newScale = _lastScale * details.scale;
-                provider.setZoom(newScale, details.localFocalPoint);
+                // Two fingers - check if this is zoom or pan
+                if ((details.scale - 1.0).abs() > 0.01) {
+                  // Significant scale change - zoom the canvas
+                  final newScale = _lastScale * details.scale;
+                  provider.setZoom(newScale, details.localFocalPoint);
+                } else {
+                  // No significant scale change - pan the canvas with reduced sensitivity
+                  provider.updatePanOffset(details.focalPointDelta * 0.7);
+                }
               }
             },
             onScaleEnd: (details) {
