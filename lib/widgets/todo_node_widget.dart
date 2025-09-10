@@ -101,45 +101,54 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: widget.node.position.dx - widget.node.size / 2,
-      top: widget.node.position.dy - widget.node.size / 2,
-      child: GestureDetector(
-        onTap: _handleTap,
-        onDoubleTap: _handleDoubleTap,
-        onPanStart: (details) {
-          context.read<CanvasProvider>().startDrag(widget.node);
-        },
-        onPanUpdate: (details) {
-          final provider = context.read<CanvasProvider>();
-          final newPosition = provider.screenToCanvas(
-            widget.node.position + details.delta,
-          );
-          provider.updateNodePosition(widget.node.id, newPosition);
-        },
-        onPanEnd: (details) {
-          context.read<CanvasProvider>().endDrag();
-        },
-        child: AnimatedBuilder(
-          animation: _glowAnimation,
-          builder: (context, child) {
-            return Container(
-              width: widget.node.size,
-              height: widget.node.size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: widget.node.color.withValues(alpha: 0.9),
-                border: Border.all(
-                  color: _getSelectionColor(),
-                  width: _getSelectionWidth(),
-                ),
-                boxShadow: _buildShadows(),
-              ),
-              child: _buildContent(),
-            );
-          },
-        ),
-      ),
+    return Consumer<CanvasProvider>(
+      builder: (context, provider, child) {
+        // Convert canvas position to screen position
+        final screenPosition = provider.canvasToScreen(widget.node.position);
+        // Scale the node size based on canvas scale
+        final scaledSize = widget.node.size * provider.scale;
+
+        return Positioned(
+          left: screenPosition.dx - scaledSize / 2,
+          top: screenPosition.dy - scaledSize / 2,
+          child: GestureDetector(
+            onTap: _handleTap,
+            onDoubleTap: _handleDoubleTap,
+            onPanStart: (details) {
+              context.read<CanvasProvider>().startDrag(widget.node);
+            },
+            onPanUpdate: (details) {
+              final provider = context.read<CanvasProvider>();
+              // Convert screen delta to canvas coordinates and update position
+              final canvasDelta = details.delta / provider.scale;
+              final newPosition = widget.node.position + canvasDelta;
+              provider.updateNodePosition(widget.node.id, newPosition);
+            },
+            onPanEnd: (details) {
+              context.read<CanvasProvider>().endDrag();
+            },
+            child: AnimatedBuilder(
+              animation: _glowAnimation,
+              builder: (context, child) {
+                return Container(
+                  width: scaledSize,
+                  height: scaledSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.node.color.withValues(alpha: 0.9),
+                    border: Border.all(
+                      color: _getSelectionColor(),
+                      width: _getSelectionWidth() * provider.scale,
+                    ),
+                    boxShadow: _buildShadows(provider.scale),
+                  ),
+                  child: _buildContent(provider.scale),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -167,11 +176,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     }
   }
 
-  List<BoxShadow> _buildShadows() {
+  List<BoxShadow> _buildShadows(double scale) {
     List<BoxShadow> shadows = [
       BoxShadow(
         color: Colors.black.withValues(alpha: 0.3),
-        blurRadius: 8.0,
+        blurRadius: 8.0 * scale,
         offset: const Offset(0, 4),
       ),
     ];
@@ -190,7 +199,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     return shadows;
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(double scale) {
     if (_isEditing) {
       return Center(
         child: TextField(
