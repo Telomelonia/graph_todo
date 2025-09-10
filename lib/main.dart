@@ -115,9 +115,13 @@ class _CanvasWidgetState extends State<CanvasWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CanvasProvider>(
-      builder: (context, provider, child) {
-        return Listener(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewSize = Size(constraints.maxWidth, constraints.maxHeight);
+        
+        return Consumer<CanvasProvider>(
+          builder: (context, provider, child) {
+            return Listener(
           onPointerSignal: (pointerSignal) {
             if (pointerSignal is PointerScrollEvent) {
               // Handle trackpad/mouse wheel zoom
@@ -143,7 +147,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                 // Create new node if not tapping on existing node
                 if (!tappedOnNode) {
                   final canvasPosition = provider.screenToCanvas(details.localPosition);
-                  provider.addNode(canvasPosition);
+                  provider.addNode(canvasPosition, viewSize: viewSize);
                 }
               }
             },
@@ -261,6 +265,8 @@ class _CanvasWidgetState extends State<CanvasWidget> {
               ],
             ),
           ),
+        );
+          },
         );
       },
     );

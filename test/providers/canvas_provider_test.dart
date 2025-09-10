@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:graph_todo/providers/canvas_provider.dart';
 
@@ -34,6 +35,15 @@ void main() {
 
       expect(provider.nodes.length, equals(1));
       expect(provider.nodes.first.text, equals('New Task'));
+    });
+
+    test('addNode sizes node as 14% of view when viewSize provided', () {
+      const viewSize = Size(1000, 800); // Width = 1000, Height = 800
+      provider.addNode(const Offset(10, 20), viewSize: viewSize);
+
+      expect(provider.nodes.length, equals(1));
+      // 14% of the smaller dimension (800) = 112.0
+      expect(provider.nodes.first.size, closeTo(112.0, 0.001));
     });
 
     test('updateNodeText modifies existing node', () {

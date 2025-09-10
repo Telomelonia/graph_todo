@@ -33,13 +33,18 @@ class CanvasProvider with ChangeNotifier {
 
 
   // Add a new node at the given position
-  void addNode(Offset position, {String text = 'New Task'}) {
+  void addNode(Offset position, {String text = 'New Task', Size? viewSize}) {
+    // Calculate base node size as 14% of the smaller screen dimension
+    double baseSize = 60.0; // fallback size
+    if (viewSize != null) {
+      baseSize = (viewSize.width < viewSize.height ? viewSize.width : viewSize.height) * 0.14;
+    }
 
     // Calculate node size inversely proportional to scale
     // When zoomed in (scale > 1), nodes are smaller in canvas coordinates
     // When zoomed out (scale < 1), nodes are larger in canvas coordinates
     // This keeps the visual size consistent on screen
-    final canvasRelativeSize = 60.0 / _scale;
+    final canvasRelativeSize = baseSize / _scale;
 
     final node = TodoNode(
       id: _uuid.v4(),
