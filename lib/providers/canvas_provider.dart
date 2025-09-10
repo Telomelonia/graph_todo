@@ -14,6 +14,7 @@ class CanvasProvider with ChangeNotifier {
 
   // Interaction state
   bool _isConnectMode = false;
+  bool _isAddNodeMode = false;
   String? _selectedNodeForConnection;
   TodoNode? _draggedNode;
 
@@ -23,6 +24,7 @@ class CanvasProvider with ChangeNotifier {
   Offset get panOffset => _panOffset;
   double get scale => _scale;
   bool get isConnectMode => _isConnectMode;
+  bool get isAddNodeMode => _isAddNodeMode;
   String? get selectedNodeForConnection => _selectedNodeForConnection;
   TodoNode? get draggedNode => _draggedNode;
 
@@ -97,6 +99,17 @@ class CanvasProvider with ChangeNotifier {
   void exitConnectMode() {
     _isConnectMode = false;
     _selectedNodeForConnection = null;
+    notifyListeners();
+  }
+
+  // Add node mode management
+  void toggleAddNodeMode() {
+    _isAddNodeMode = !_isAddNodeMode;
+    notifyListeners();
+  }
+
+  void exitAddNodeMode() {
+    _isAddNodeMode = false;
     notifyListeners();
   }
 
@@ -177,6 +190,7 @@ class CanvasProvider with ChangeNotifier {
     _panOffset = Offset.zero;
     _scale = 1.0;
     _isConnectMode = false;
+    _isAddNodeMode = false;
     _selectedNodeForConnection = null;
     _draggedNode = null;
     notifyListeners();
