@@ -13,33 +13,37 @@ void main() {
       expect(connection.id, equals('test-id'));
       expect(connection.fromNodeId, equals('node1'));
       expect(connection.toNodeId, equals('node2'));
-      expect(connection.isGolden, isFalse);
+      expect(connection.isGreen, isFalse);
+      expect(connection.isCharging, isFalse);
+      expect(connection.chargingProgress, equals(0.0));
     });
 
-    test('creates connection with custom golden state', () {
+    test('creates connection with custom green state', () {
       final connection = Connection(
         id: 'test-id',
         fromNodeId: 'node1',
         toNodeId: 'node2',
-        isGolden: true,
+        isGreen: true,
       );
 
-      expect(connection.isGolden, isTrue);
+      expect(connection.isGreen, isTrue);
     });
 
-    test('copyWith updates golden state', () {
+    test('copyWith updates green state', () {
       final original = Connection(
         id: 'test-id',
         fromNodeId: 'node1',
         toNodeId: 'node2',
       );
 
-      final updated = original.copyWith(isGolden: true);
+      final updated = original.copyWith(isGreen: true, isCharging: true, chargingProgress: 0.5);
 
       expect(updated.id, equals('test-id'));
       expect(updated.fromNodeId, equals('node1'));
       expect(updated.toNodeId, equals('node2'));
-      expect(updated.isGolden, isTrue);
+      expect(updated.isGreen, isTrue);
+      expect(updated.isCharging, isTrue);
+      expect(updated.chargingProgress, equals(0.5));
     });
 
     test('copyWith preserves original when no changes', () {
@@ -47,7 +51,9 @@ void main() {
         id: 'test-id',
         fromNodeId: 'node1',
         toNodeId: 'node2',
-        isGolden: true,
+        isGreen: true,
+        isCharging: true,
+        chargingProgress: 0.7,
       );
 
       final copy = original.copyWith();
@@ -55,7 +61,9 @@ void main() {
       expect(copy.id, equals(original.id));
       expect(copy.fromNodeId, equals(original.fromNodeId));
       expect(copy.toNodeId, equals(original.toNodeId));
-      expect(copy.isGolden, equals(original.isGolden));
+      expect(copy.isGreen, equals(original.isGreen));
+      expect(copy.isCharging, equals(original.isCharging));
+      expect(copy.chargingProgress, equals(original.chargingProgress));
     });
 
     test('equality works correctly', () {
@@ -109,7 +117,9 @@ void main() {
         id: 'test-id',
         fromNodeId: 'node1',
         toNodeId: 'node2',
-        isGolden: true,
+        isGreen: true,
+        isCharging: true,
+        chargingProgress: 0.8,
       );
 
       final json = connection.toJson();
@@ -117,7 +127,9 @@ void main() {
       expect(json['id'], equals('test-id'));
       expect(json['fromNodeId'], equals('node1'));
       expect(json['toNodeId'], equals('node2'));
-      expect(json['isGolden'], isTrue);
+      expect(json['isGreen'], isTrue);
+      expect(json['isCharging'], isTrue);
+      expect(json['chargingProgress'], equals(0.8));
     });
 
     test('fromJson deserializes correctly', () {
@@ -125,7 +137,9 @@ void main() {
         'id': 'test-id',
         'fromNodeId': 'node1',
         'toNodeId': 'node2',
-        'isGolden': true,
+        'isGreen': true,
+        'isCharging': true,
+        'chargingProgress': 0.9,
       };
 
       final connection = Connection.fromJson(json);
@@ -133,7 +147,9 @@ void main() {
       expect(connection.id, equals('test-id'));
       expect(connection.fromNodeId, equals('node1'));
       expect(connection.toNodeId, equals('node2'));
-      expect(connection.isGolden, isTrue);
+      expect(connection.isGreen, isTrue);
+      expect(connection.isCharging, isTrue);
+      expect(connection.chargingProgress, equals(0.9));
     });
 
     test('fromJson handles missing optional fields', () {
@@ -145,7 +161,9 @@ void main() {
 
       final connection = Connection.fromJson(json);
 
-      expect(connection.isGolden, isFalse);
+      expect(connection.isGreen, isFalse);
+      expect(connection.isCharging, isFalse);
+      expect(connection.chargingProgress, equals(0.0));
     });
 
     test('roundtrip serialization preserves data', () {
@@ -153,7 +171,9 @@ void main() {
         id: 'test-id',
         fromNodeId: 'node1',
         toNodeId: 'node2',
-        isGolden: true,
+        isGreen: true,
+        isCharging: true,
+        chargingProgress: 0.6,
       );
 
       final json = original.toJson();
@@ -162,7 +182,9 @@ void main() {
       expect(restored.id, equals(original.id));
       expect(restored.fromNodeId, equals(original.fromNodeId));
       expect(restored.toNodeId, equals(original.toNodeId));
-      expect(restored.isGolden, equals(original.isGolden));
+      expect(restored.isGreen, equals(original.isGreen));
+      expect(restored.isCharging, equals(original.isCharging));
+      expect(restored.chargingProgress, equals(original.chargingProgress));
     });
   });
 }

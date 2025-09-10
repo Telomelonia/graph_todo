@@ -2,13 +2,17 @@ class Connection {
   final String id;
   final String fromNodeId;
   final String toNodeId;
-  bool isGolden;
+  bool isGreen;
+  bool isCharging;
+  double chargingProgress;
 
   Connection({
     required this.id,
     required this.fromNodeId,
     required this.toNodeId,
-    this.isGolden = false,
+    this.isGreen = false,
+    this.isCharging = false,
+    this.chargingProgress = 0.0,
   });
 
   // Convert to JSON for storage
@@ -17,7 +21,9 @@ class Connection {
       'id': id,
       'fromNodeId': fromNodeId,
       'toNodeId': toNodeId,
-      'isGolden': isGolden,
+      'isGreen': isGreen,
+      'isCharging': isCharging,
+      'chargingProgress': chargingProgress,
     };
   }
 
@@ -27,19 +33,25 @@ class Connection {
       id: json['id'],
       fromNodeId: json['fromNodeId'],
       toNodeId: json['toNodeId'],
-      isGolden: json['isGolden'] ?? false,
+      isGreen: json['isGreen'] ?? false,
+      isCharging: json['isCharging'] ?? false,
+      chargingProgress: json['chargingProgress'] ?? 0.0,
     );
   }
 
   // Create a copy with updated properties
   Connection copyWith({
-    bool? isGolden,
+    bool? isGreen,
+    bool? isCharging,
+    double? chargingProgress,
   }) {
     return Connection(
       id: id,
       fromNodeId: fromNodeId,
       toNodeId: toNodeId,
-      isGolden: isGolden ?? this.isGolden,
+      isGreen: isGreen ?? this.isGreen,
+      isCharging: isCharging ?? this.isCharging,
+      chargingProgress: chargingProgress ?? this.chargingProgress,
     );
   }
 

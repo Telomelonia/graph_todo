@@ -44,6 +44,16 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     if (widget.node.isCompleted) {
       _glowController.forward();
     }
+
+    // Check if this is a newly created node that should start in editing mode
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<CanvasProvider>();
+      if (provider.newlyCreatedNodeId == widget.node.id) {
+        setState(() {
+          _isEditing = true;
+        });
+      }
+    });
   }
 
   @override
@@ -85,6 +95,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
   void _handleDoubleTap() {
     if (!context.read<CanvasProvider>().isConnectMode) {
+      final provider = context.read<CanvasProvider>();
+      provider.focusOnNode(widget.node.id);
       setState(() {
         _isEditing = true;
       });
@@ -93,7 +105,20 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
   void _handleEditingComplete() {
     final provider = context.read<CanvasProvider>();
-    provider.updateNodeText(widget.node.id, _textController.text);
+
+    // If the text is empty, set a default text
+    final finalText = _textController.text.trim().isEmpty ? 'New Task' : _textController.text;
+
+    provider.updateNodeText(widget.node.id, finalText);
+
+    // Clear the newly created flag if this was a newly created node
+    if (provider.newlyCreatedNodeId == widget.node.id) {
+      provider.clearNewlyCreatedFlag();
+    }
+
+    // Restore previous zoom state when exiting edit mode
+    provider.restorePreviousZoomState();
+
     setState(() {
       _isEditing = false;
     });

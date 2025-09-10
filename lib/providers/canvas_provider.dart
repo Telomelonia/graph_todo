@@ -17,6 +17,11 @@ class CanvasProvider with ChangeNotifier {
   bool _isAddNodeMode = false;
   String? _selectedNodeForConnection;
   TodoNode? _draggedNode;
+  String? _newlyCreatedNodeId; // Track newly created node for immediate editing
+  
+  // Previous state for zoom focus functionality
+  double _previousScale = 1.0;
+  Offset _previousPanOffset = Offset.zero;
 
   // Getters
   List<TodoNode> get nodes => List.unmodifiable(_nodes);
@@ -27,9 +32,39 @@ class CanvasProvider with ChangeNotifier {
   bool get isAddNodeMode => _isAddNodeMode;
   String? get selectedNodeForConnection => _selectedNodeForConnection;
   TodoNode? get draggedNode => _draggedNode;
+  String? get newlyCreatedNodeId => _newlyCreatedNodeId;
+
+  // Store current state for zoom back
+  void storePreviousZoomState() {
+    _previousScale = _scale;
+    _previousPanOffset = _panOffset;
+  }
+
+  // Restore previous zoom state
+  void restorePreviousZoomState() {
+    _scale = _previousScale;
+    _panOffset = _previousPanOffset;
+    notifyListeners();
+  }
+
+  // Focus on a specific node by zooming to it
+  void focusOnNode(String nodeId) {
+    final node = _nodes.firstWhere((n) => n.id == nodeId);
+    storePreviousZoomState();
+    
+    // Set focus zoom level
+    _scale = 2.0;
+    
+    // Center the node on screen (assuming screen center is 400x400)
+    const screenCenter = Offset(400, 400);
+    _panOffset = screenCenter - (node.position * _scale);
+    
+    notifyListeners();
+  }
 
   // Add a new node at the given position
   void addNode(Offset position, {String text = 'New Task'}) {
+
     // Calculate node size inversely proportional to scale
     // When zoomed in (scale > 1), nodes are smaller in canvas coordinates
     // When zoomed out (scale < 1), nodes are larger in canvas coordinates
@@ -43,6 +78,7 @@ class CanvasProvider with ChangeNotifier {
       size: canvasRelativeSize,
     );
     _nodes.add(node);
+    _newlyCreatedNodeId = node.id; // Mark as newly created for immediate editing
     notifyListeners();
   }
 
@@ -68,11 +104,72 @@ class CanvasProvider with ChangeNotifier {
   void toggleNodeCompletion(String nodeId) {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
     if (index != -1) {
+      final wasCompleted = _nodes[index].isCompleted;
       _nodes[index] = _nodes[index].copyWith(
         isCompleted: !_nodes[index].isCompleted,
       );
+      
+      // If node was just completed, trigger charging animations
+      if (!wasCompleted && _nodes[index].isCompleted) {
+        _startChargingAnimations(nodeId);
+      }
+      
       _updateConnectionStates();
       notifyListeners();
+    }
+  }
+
+  // Start charging animations for connections involving the completed node
+  void _startChargingAnimations(String completedNodeId) {
+    final relatedConnections = _connections.where(
+      (conn) => conn.fromNodeId == completedNodeId || conn.toNodeId == completedNodeId,
+    );
+
+    for (final connection in relatedConnections) {
+      // Only start charging if the other node is not yet completed
+      final otherNodeId = connection.fromNodeId == completedNodeId 
+          ? connection.toNodeId 
+          : connection.fromNodeId;
+      final otherNode = _nodes.firstWhere((n) => n.id == otherNodeId);
+      
+      if (!otherNode.isCompleted) {
+        _startConnectionChargingAnimation(connection.id);
+      }
+    }
+  }
+
+  // Start charging animation for a specific connection
+  void _startConnectionChargingAnimation(String connectionId) {
+    final connectionIndex = _connections.indexWhere((c) => c.id == connectionId);
+    if (connectionIndex != -1) {
+      _connections[connectionIndex] = _connections[connectionIndex].copyWith(
+        isCharging: true,
+        chargingProgress: 0.0,
+      );
+      
+      // Simulate charging progress over time
+      Future.delayed(Duration.zero, () async {
+        for (double progress = 0.0; progress <= 1.0; progress += 0.05) {
+          await Future.delayed(const Duration(milliseconds: 50));
+          final index = _connections.indexWhere((c) => c.id == connectionId);
+          if (index != -1 && _connections[index].isCharging) {
+            _connections[index] = _connections[index].copyWith(
+              chargingProgress: progress,
+            );
+            notifyListeners();
+          }
+        }
+        
+        // Stop charging animation
+        final index = _connections.indexWhere((c) => c.id == connectionId);
+        if (index != -1) {
+          _connections[index] = _connections[index].copyWith(
+            isCharging: false,
+            chargingProgress: 0.0,
+          );
+          notifyListeners();
+        }
+      });
     }
   }
 
@@ -185,16 +282,16 @@ class CanvasProvider with ChangeNotifier {
     }
   }
 
-  // Update connection golden state based on node completion
+  // Update connection green state based on node completion
   void _updateConnectionStates() {
     for (int i = 0; i < _connections.length; i++) {
       final conn = _connections[i];
       final fromNode = _nodes.firstWhere((n) => n.id == conn.fromNodeId);
       final toNode = _nodes.firstWhere((n) => n.id == conn.toNodeId);
 
-      final shouldBeGolden = fromNode.isCompleted && toNode.isCompleted;
-      if (conn.isGolden != shouldBeGolden) {
-        _connections[i] = conn.copyWith(isGolden: shouldBeGolden);
+      final shouldBeGreen = fromNode.isCompleted && toNode.isCompleted;
+      if (conn.isGreen != shouldBeGreen) {
+        _connections[i] = conn.copyWith(isGreen: shouldBeGreen);
       }
     }
   }
@@ -235,6 +332,12 @@ class CanvasProvider with ChangeNotifier {
     _isAddNodeMode = false;
     _selectedNodeForConnection = null;
     _draggedNode = null;
+    notifyListeners();
+  }
+
+  // Clear the newly created node flag when editing is complete
+  void clearNewlyCreatedFlag() {
+    _newlyCreatedNodeId = null;
     notifyListeners();
   }
 }

@@ -109,11 +109,11 @@ void main() {
       provider.updateScale(2.0);
       expect(provider.scale, equals(2.0));
 
-      provider.updateScale(0.3);
-      expect(provider.scale, equals(0.5)); // clamped to min
+      provider.updateScale(0.05);
+      expect(provider.scale, equals(0.1)); // clamped to min
 
-      provider.updateScale(5.0);
-      expect(provider.scale, equals(3.0)); // clamped to max
+      provider.updateScale(10.0);
+      expect(provider.scale, equals(5.0)); // clamped to max
     });
 
     test('toggleConnectMode changes connect mode state', () {
@@ -185,7 +185,7 @@ void main() {
       final connection = provider.connections.first;
       expect(connection.fromNodeId, equals(node1Id));
       expect(connection.toNodeId, equals(node2Id));
-      expect(connection.isGolden, isFalse);
+      expect(connection.isGreen, isFalse);
     });
 
     test('createConnection prevents duplicate connections', () {
@@ -201,26 +201,26 @@ void main() {
       expect(provider.connections.length, equals(1));
     });
 
-    test('connection becomes golden when both nodes completed', () {
+    test('connection becomes green when both nodes completed', () {
       provider.addNode(const Offset(10, 20));
       provider.addNode(const Offset(30, 40));
       final node1Id = provider.nodes[0].id;
       final node2Id = provider.nodes[1].id;
 
       provider.createConnection(node1Id, node2Id);
-      expect(provider.connections.first.isGolden, isFalse);
+      expect(provider.connections.first.isGreen, isFalse);
 
       // Complete first node
       provider.toggleNodeCompletion(node1Id);
-      expect(provider.connections.first.isGolden, isFalse);
+      expect(provider.connections.first.isGreen, isFalse);
 
       // Complete second node
       provider.toggleNodeCompletion(node2Id);
-      expect(provider.connections.first.isGolden, isTrue);
+      expect(provider.connections.first.isGreen, isTrue);
 
       // Uncomplete first node
       provider.toggleNodeCompletion(node1Id);
-      expect(provider.connections.first.isGolden, isFalse);
+      expect(provider.connections.first.isGreen, isFalse);
     });
 
     test('startDrag and endDrag manage drag state', () {
