@@ -30,10 +30,17 @@ class CanvasProvider with ChangeNotifier {
 
   // Add a new node at the given position
   void addNode(Offset position, {String text = 'New Task'}) {
+    // Calculate node size inversely proportional to scale
+    // When zoomed in (scale > 1), nodes are smaller in canvas coordinates
+    // When zoomed out (scale < 1), nodes are larger in canvas coordinates
+    // This keeps the visual size consistent on screen
+    final canvasRelativeSize = 60.0 / _scale;
+
     final node = TodoNode(
       id: _uuid.v4(),
       text: text,
       position: position,
+      size: canvasRelativeSize,
     );
     _nodes.add(node);
     notifyListeners();
@@ -85,8 +92,36 @@ class CanvasProvider with ChangeNotifier {
   }
 
   void updateScale(double newScale) {
-    _scale = newScale.clamp(0.5, 3.0);
+    _scale = newScale.clamp(0.1, 5.0);
     notifyListeners();
+  }
+
+  void zoom(double scaleDelta, Offset focalPoint) {
+    final oldScale = _scale;
+    final newScale = (_scale * scaleDelta).clamp(0.1, 5.0);
+
+    if (newScale != oldScale) {
+      // Adjust pan offset to keep focal point stationary during zoom
+      final focalPointCanvas = screenToCanvas(focalPoint);
+      _scale = newScale;
+      final newFocalPointScreen = canvasToScreen(focalPointCanvas);
+      _panOffset += focalPoint - newFocalPointScreen;
+      notifyListeners();
+    }
+  }
+
+  // Alternative zoom method that takes absolute scale value
+  void setZoom(double newScale, Offset focalPoint) {
+    final clampedScale = newScale.clamp(0.1, 5.0);
+
+    if (clampedScale != _scale) {
+      // Adjust pan offset to keep focal point stationary during zoom
+      final focalPointCanvas = screenToCanvas(focalPoint);
+      _scale = clampedScale;
+      final newFocalPointScreen = canvasToScreen(focalPointCanvas);
+      _panOffset += focalPoint - newFocalPointScreen;
+      notifyListeners();
+    }
   }
 
   // Connection mode management
@@ -181,6 +216,13 @@ class CanvasProvider with ChangeNotifier {
   // Convert canvas coordinates to screen coordinates
   Offset canvasToScreen(Offset canvasPoint) {
     return canvasPoint * _scale + _panOffset;
+  }
+
+  // Check if a screen point hits a node
+  bool isPointOnNode(Offset screenPoint, TodoNode node) {
+    final canvasPoint = screenToCanvas(screenPoint);
+    final distance = (node.position - canvasPoint).distance;
+    return distance <= node.size / 2;
   }
 
   // Clear all nodes and connections
