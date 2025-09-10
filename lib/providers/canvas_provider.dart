@@ -19,9 +19,6 @@ class CanvasProvider with ChangeNotifier {
   TodoNode? _draggedNode;
   String? _newlyCreatedNodeId; // Track newly created node for immediate editing
   
-  // Previous state for zoom focus functionality
-  double _previousScale = 1.0;
-  Offset _previousPanOffset = Offset.zero;
 
   // Getters
   List<TodoNode> get nodes => List.unmodifiable(_nodes);
@@ -34,33 +31,6 @@ class CanvasProvider with ChangeNotifier {
   TodoNode? get draggedNode => _draggedNode;
   String? get newlyCreatedNodeId => _newlyCreatedNodeId;
 
-  // Store current state for zoom back
-  void storePreviousZoomState() {
-    _previousScale = _scale;
-    _previousPanOffset = _panOffset;
-  }
-
-  // Restore previous zoom state
-  void restorePreviousZoomState() {
-    _scale = _previousScale;
-    _panOffset = _previousPanOffset;
-    notifyListeners();
-  }
-
-  // Focus on a specific node by zooming to it
-  void focusOnNode(String nodeId) {
-    final node = _nodes.firstWhere((n) => n.id == nodeId);
-    storePreviousZoomState();
-    
-    // Set focus zoom level
-    _scale = 2.0;
-    
-    // Center the node on screen (assuming screen center is 400x400)
-    const screenCenter = Offset(400, 400);
-    _panOffset = screenCenter - (node.position * _scale);
-    
-    notifyListeners();
-  }
 
   // Add a new node at the given position
   void addNode(Offset position, {String text = 'New Task'}) {

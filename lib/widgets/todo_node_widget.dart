@@ -95,8 +95,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
   void _handleDoubleTap() {
     if (!context.read<CanvasProvider>().isConnectMode) {
-      final provider = context.read<CanvasProvider>();
-      provider.focusOnNode(widget.node.id);
       setState(() {
         _isEditing = true;
       });
@@ -115,9 +113,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     if (provider.newlyCreatedNodeId == widget.node.id) {
       provider.clearNewlyCreatedFlag();
     }
-
-    // Restore previous zoom state when exiting edit mode
-    provider.restorePreviousZoomState();
 
     setState(() {
       _isEditing = false;
