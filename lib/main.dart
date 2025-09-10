@@ -42,6 +42,19 @@ class HomePage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               FloatingActionButton(
+                heroTag: "addNode",
+                onPressed: provider.toggleAddNodeMode,
+                backgroundColor: provider.isAddNodeMode
+                    ? Colors.green
+                    : Colors.grey,
+                child: Icon(
+                  provider.isAddNodeMode
+                      ? Icons.add
+                      : Icons.add,
+                ),
+              ),
+              const SizedBox(height: 10),
+              FloatingActionButton(
                 heroTag: "connect",
                 onPressed: provider.toggleConnectMode,
                 backgroundColor: provider.isConnectMode
@@ -98,8 +111,8 @@ class CanvasWidget extends StatelessWidget {
       builder: (context, provider, child) {
         return GestureDetector(
           onTapUp: (details) {
-            // Only create new node if not in connect mode and not tapping on existing node
-            if (!provider.isConnectMode) {
+            // Only create new node if in add node mode and not in connect mode and not tapping on existing node
+            if (!provider.isConnectMode && provider.isAddNodeMode) {
               final canvasPosition = provider.screenToCanvas(details.localPosition);
 
               // Check if tap is on any existing node
@@ -151,10 +164,31 @@ class CanvasWidget extends StatelessWidget {
                     (node) => TodoNodeWidget(node: node),
               ),
 
+              // Add node mode indicator
+              if (provider.isAddNodeMode)
+                Positioned(
+                  top: 50,
+                  left: 20,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Click anywhere to add a new node',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
               // Connection mode indicator
               if (provider.isConnectMode)
                 Positioned(
-                  top: 50,
+                  top: 100,
                   left: 20,
                   child: Container(
                     padding: const EdgeInsets.all(16),

@@ -12,13 +12,30 @@ void main() {
     expect(find.byType(CanvasWidget), findsOneWidget);
     
     // Check for floating action buttons
-    expect(find.byType(FloatingActionButton), findsNWidgets(2));
+    expect(find.byType(FloatingActionButton), findsNWidgets(3));
+    
+    // Check for add node button
+    expect(find.byIcon(Icons.add), findsOneWidget);
     
     // Check for connection mode button (link icon)
     expect(find.byIcon(Icons.link), findsOneWidget);
     
     // Check for clear button (clear_all icon)
     expect(find.byIcon(Icons.clear_all), findsOneWidget);
+  });
+
+  testWidgets('Add node mode can be toggled', (WidgetTester tester) async {
+    await tester.pumpWidget(const GraphTodoApp());
+
+    // Initially should not show add node mode indicator
+    expect(find.text('Click anywhere to add a new node'), findsNothing);
+
+    // Tap the add node toggle button
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
+
+    // Should show add node mode indicator
+    expect(find.text('Click anywhere to add a new node'), findsOneWidget);
   });
 
   testWidgets('Connection mode can be toggled', (WidgetTester tester) async {
