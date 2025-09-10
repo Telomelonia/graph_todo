@@ -196,12 +196,12 @@ void main() {
       final decoration = container.decoration as BoxDecoration;
       expect(decoration.boxShadow!.length, greaterThan(1)); // Has glow shadow
       
-      // Check if any shadow has green color (glow effect) - check RGB values only
+      // Check if any shadow has green color (glow effect) - use proper color component access
       final hasGlowShadow = decoration.boxShadow!.any(
-        (shadow) => shadow.color.red == Colors.green.red && 
-                    shadow.color.green == Colors.green.green &&
-                    shadow.color.blue == Colors.green.blue &&
-                    shadow.color.alpha > 0,
+        (shadow) => (shadow.color.r * 255.0).round() & 0xff == (Colors.green.r * 255.0).round() & 0xff && 
+                    (shadow.color.g * 255.0).round() & 0xff == (Colors.green.g * 255.0).round() & 0xff &&
+                    (shadow.color.b * 255.0).round() & 0xff == (Colors.green.b * 255.0).round() & 0xff &&
+                    (shadow.color.a * 255.0).round() & 0xff > 0,
       );
       expect(hasGlowShadow, isTrue);
     });

@@ -37,29 +37,30 @@ class ConnectionPainter extends CustomPainter {
     final fromPos = _canvasToScreen(fromNode.position);
     final toPos = _canvasToScreen(toNode.position);
 
-    // Calculate connection points on node edges
+    // Calculate connection points on node edges (scale the node radii properly)
     final connectionPoints = _calculateConnectionPoints(
       fromPos,
       toPos,
-      fromNode.size / 2,
-      toNode.size / 2,
+      (fromNode.size / 2) * scale,
+      (toNode.size / 2) * scale,
     );
 
-    // Create paint for the connection line
+    // Create paint for the connection line (limit stroke scaling to prevent over-thick lines)
+    final scaledStrokeWidth = (3.0 * scale).clamp(1.0, 6.0);
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
+      ..strokeWidth = scaledStrokeWidth
       ..strokeCap = StrokeCap.round;
 
     // Set color based on connection state
     if (connection.isGolden) {
       paint.color = const Color(0xFFFFD700); // Gold color
-      paint.strokeWidth = 4.0;
+      paint.strokeWidth = (4.0 * scale).clamp(2.0, 8.0);
 
-      // Add glow effect for golden connections
+      // Add glow effect for golden connections (limit glow scaling)
       final glowPaint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 8.0
+        ..strokeWidth = (8.0 * scale).clamp(4.0, 16.0)
         ..strokeCap = StrokeCap.round
         ..color = const Color(0xFFFFD700).withValues(alpha: 0.3);
 
@@ -72,13 +73,14 @@ class ConnectionPainter extends CustomPainter {
     canvas.drawLine(connectionPoints.from, connectionPoints.to, paint);
 
     // Draw small circles at connection points
-    _drawConnectionDots(canvas, connectionPoints, connection.isGolden);
+    _drawConnectionDots(canvas, connectionPoints, connection.isGolden, scale);
   }
 
   void _drawConnectionDots(
       Canvas canvas,
       ConnectionPoints points,
       bool isGolden,
+      double scale,
       ) {
     final dotPaint = Paint()
       ..style = PaintingStyle.fill
@@ -86,7 +88,7 @@ class ConnectionPainter extends CustomPainter {
           ? const Color(0xFFFFD700)
           : Colors.white.withValues(alpha: 0.8);
 
-    const dotRadius = 4.0;
+    final dotRadius = (4.0 * scale).clamp(2.0, 8.0);
     canvas.drawCircle(points.from, dotRadius, dotPaint);
     canvas.drawCircle(points.to, dotRadius, dotPaint);
   }
