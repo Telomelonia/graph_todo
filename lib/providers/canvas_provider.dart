@@ -34,8 +34,8 @@ class CanvasProvider with ChangeNotifier {
   String? get newlyCreatedNodeId => _newlyCreatedNodeId;
 
 
-  // Add a new node at the given position
-  void addNode(Offset position, {String text = 'New Task', Size? viewSize}) {
+  // Add a new node at the given position with immediate editing and zoom
+  void addNode(Offset position, {String text = '', Size? viewSize}) {
     // Calculate base node size as 14% of the smaller screen dimension
     double baseSize = 60.0; // fallback size
     if (viewSize != null) {
@@ -50,12 +50,33 @@ class CanvasProvider with ChangeNotifier {
 
     final node = TodoNode(
       id: _uuid.v4(),
-      text: text,
+      text: text.isEmpty ? '' : text, // Start with empty text for immediate editing
       position: position,
       size: canvasRelativeSize,
     );
     _nodes.add(node);
     _newlyCreatedNodeId = node.id; // Mark as newly created for immediate editing
+
+    // Zoom to the new node for better editing experience
+    if (viewSize != null) {
+      zoomToNodeWithScreenSize(node.id, viewSize);
+    }
+
+    notifyListeners();
+  }
+
+  // Zoom to a specific node with proper screen size calculation
+  void zoomToNodeWithScreenSize(String nodeId, Size screenSize, {double targetScale = 1.5}) {
+    final node = _nodes.firstWhere((n) => n.id == nodeId);
+
+    // Calculate the center of the screen
+    final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
+
+    // Set the pan offset so the node appears at screen center
+    final targetPanOffset = screenCenter - (node.position * targetScale);
+
+    _panOffset = targetPanOffset;
+    _scale = targetScale;
     notifyListeners();
   }
 
@@ -336,3 +357,4 @@ class CanvasProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+
