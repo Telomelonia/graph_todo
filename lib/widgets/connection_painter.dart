@@ -76,7 +76,7 @@ class ConnectionPainter extends CustomPainter {
 
       // Create arrow path
       final arrowPath = Path();
-      final arrowSize = 8.0;
+      const arrowSize = 8.0;
 
       // Arrow pointing outward
       final tipX = arrowCenter.dx + math.cos(angle) * arrowSize;
@@ -174,11 +174,25 @@ class ConnectionPainter extends CustomPainter {
     final distance = direction.distance;
 
     if (distance > 0) {
-      final normalizedDirection = direction / distance;
-
-      // Draw charging effect
-      final chargedDistance = distance * connection.chargingProgress;
-      final chargedEndPoint = points.from + normalizedDirection * chargedDistance;
+      // Determine charging direction based on which node is the source
+      final isChargingFromStart = connection.chargingFromNodeId == connection.fromNodeId;
+      
+      Offset chargingStartPoint;
+      Offset chargingEndPoint;
+      
+      if (isChargingFromStart) {
+        // Charging from the 'from' node to the 'to' node
+        final normalizedDirection = direction / distance;
+        final chargedDistance = distance * connection.chargingProgress;
+        chargingStartPoint = points.from;
+        chargingEndPoint = points.from + normalizedDirection * chargedDistance;
+      } else {
+        // Charging from the 'to' node to the 'from' node
+        final normalizedDirection = -direction / distance; // Reverse direction
+        final chargedDistance = distance * connection.chargingProgress;
+        chargingStartPoint = points.to;
+        chargingEndPoint = points.to + normalizedDirection * chargedDistance;
+      }
 
       final chargingPaint = Paint()
         ..style = PaintingStyle.stroke
@@ -192,15 +206,15 @@ class ConnectionPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..color = const Color(0xFF4CAF50).withValues(alpha: 0.5);
 
-      if (chargedDistance > 0) {
-        canvas.drawLine(points.from, chargedEndPoint, glowPaint);
-        canvas.drawLine(points.from, chargedEndPoint, chargingPaint);
+      if (connection.chargingProgress > 0) {
+        canvas.drawLine(chargingStartPoint, chargingEndPoint, glowPaint);
+        canvas.drawLine(chargingStartPoint, chargingEndPoint, chargingPaint);
 
         final chargingPointPaint = Paint()
           ..style = PaintingStyle.fill
           ..color = const Color(0xFF81C784);
 
-        canvas.drawCircle(chargedEndPoint, (6.0 * scale).clamp(3.0, 12.0), chargingPointPaint);
+        canvas.drawCircle(chargingEndPoint, (6.0 * scale).clamp(3.0, 12.0), chargingPointPaint);
       }
     }
 

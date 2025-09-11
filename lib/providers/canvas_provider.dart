@@ -131,18 +131,19 @@ class CanvasProvider with ChangeNotifier {
       final otherNode = _nodes.firstWhere((n) => n.id == otherNodeId);
       
       if (!otherNode.isCompleted) {
-        _startConnectionChargingAnimation(connection.id);
+        _startConnectionChargingAnimation(connection.id, completedNodeId);
       }
     }
   }
 
   // Start charging animation for a specific connection
-  void _startConnectionChargingAnimation(String connectionId) {
+  void _startConnectionChargingAnimation(String connectionId, String completedNodeId) {
     final connectionIndex = _connections.indexWhere((c) => c.id == connectionId);
     if (connectionIndex != -1) {
       _connections[connectionIndex] = _connections[connectionIndex].copyWith(
         isCharging: true,
         chargingProgress: 0.0,
+        chargingFromNodeId: completedNodeId,
       );
       
       // Simulate charging progress over time
@@ -164,6 +165,7 @@ class CanvasProvider with ChangeNotifier {
           _connections[index] = _connections[index].copyWith(
             isCharging: false,
             chargingProgress: 0.0,
+            chargingFromNodeId: null,
           );
           notifyListeners();
         }

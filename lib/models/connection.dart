@@ -5,6 +5,7 @@ class Connection {
   bool isGreen;
   bool isCharging;
   double chargingProgress;
+  String? chargingFromNodeId; // ID of the node that is charging (the completed one)
 
   Connection({
     required this.id,
@@ -13,6 +14,7 @@ class Connection {
     this.isGreen = false,
     this.isCharging = false,
     this.chargingProgress = 0.0,
+    this.chargingFromNodeId,
   });
 
   // Convert to JSON for storage
@@ -24,6 +26,7 @@ class Connection {
       'isGreen': isGreen,
       'isCharging': isCharging,
       'chargingProgress': chargingProgress,
+      'chargingFromNodeId': chargingFromNodeId,
     };
   }
 
@@ -36,6 +39,7 @@ class Connection {
       isGreen: json['isGreen'] ?? false,
       isCharging: json['isCharging'] ?? false,
       chargingProgress: json['chargingProgress'] ?? 0.0,
+      chargingFromNodeId: json['chargingFromNodeId'],
     );
   }
 
@@ -44,6 +48,7 @@ class Connection {
     bool? isGreen,
     bool? isCharging,
     double? chargingProgress,
+    String? chargingFromNodeId,
   }) {
     return Connection(
       id: id,
@@ -52,6 +57,7 @@ class Connection {
       isGreen: isGreen ?? this.isGreen,
       isCharging: isCharging ?? this.isCharging,
       chargingProgress: chargingProgress ?? this.chargingProgress,
+      chargingFromNodeId: chargingFromNodeId ?? this.chargingFromNodeId,
     );
   }
 
