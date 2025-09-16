@@ -46,11 +46,11 @@ class HomePage extends StatelessWidget {
                 heroTag: "addNode",
                 onPressed: provider.toggleAddNodeMode,
                 backgroundColor: provider.isAddNodeMode
-                    ? Colors.green
-                    : Colors.grey,
+                    ? Colors.grey
+                    : Colors.green,
                 child: Icon(
                   provider.isAddNodeMode
-                      ? Icons.add
+                      ? Icons.close
                       : Icons.add,
                 ),
               ),
@@ -235,7 +235,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.9),
+                        color: Colors.grey.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(

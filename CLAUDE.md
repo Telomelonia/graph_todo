@@ -32,8 +32,9 @@ GraphTodo is a Flutter application that implements an interactive graph-based to
 **State Management**: Uses Provider pattern with `CanvasProvider` as the main state manager for:
 - Node creation, editing, and deletion
 - Connection management between nodes
-- Canvas pan/zoom operations
-- Connection mode toggling
+- Canvas pan/zoom operations with multi-touch support
+- Tool mode management (node creation, connection, eraser modes)
+- Canvas state including grid visibility and zoom level
 
 **Data Models**:
 - `TodoNode` (`lib/models/todo_node.dart`): Represents individual todo items with position, completion state, and visual properties
@@ -48,20 +49,32 @@ GraphTodo is a Flutter application that implements an interactive graph-based to
 ### Key Features
 
 **Interactive Canvas**: 
-- Click empty space to create nodes
-- Double-click nodes to edit text
+- Toggle button for node creation mode
+- Click empty space to create nodes (when in node creation mode)
+- Double-click nodes to edit text with zoom-in functionality
 - Drag nodes to reposition
-- Pan canvas with multi-touch gestures
+- Two-finger trackpad panning and scroll wheel panning
+- Multi-touch zoom and pinch-to-zoom
+- Scale-aware interactions with proper coordinate transformations
 
 **Connection System**:
 - Toggle connection mode via floating action button
 - Select two nodes to create connections
 - Golden connections appear when both connected nodes are completed
+- Charging effects on connectors with animations
+
+**Tools and Modes**:
+- Eraser mode for deleting nodes and connections
+- Connection mode with visual feedback
+- Clear canvas functionality with confirmation dialog
+- Mode indicators for current tool selection
 
 **Visual Feedback**:
 - Glow animations for completed nodes
 - Color-coded connection states
-- Grid background for positioning reference
+- Optional grid background for positioning reference
+- Zoom level indicator showing current scale percentage
+- Enhanced visual effects and animations
 
 ### Dependencies
 
