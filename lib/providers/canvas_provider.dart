@@ -62,6 +62,9 @@ class CanvasProvider with ChangeNotifier {
       zoomToNodeWithScreenSize(node.id, viewSize);
     }
 
+    // Auto-exit add node mode after creating a node
+    exitAddNodeMode();
+    
     notifyListeners();
   }
 

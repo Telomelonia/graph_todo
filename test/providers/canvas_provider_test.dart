@@ -34,7 +34,7 @@ void main() {
       provider.addNode(const Offset(10, 20));
 
       expect(provider.nodes.length, equals(1));
-      expect(provider.nodes.first.text, equals('New Task'));
+      expect(provider.nodes.first.text, equals(''));
     });
 
     test('addNode sizes node as 14% of view when viewSize provided', () {
@@ -44,6 +44,19 @@ void main() {
       expect(provider.nodes.length, equals(1));
       // 14% of the smaller dimension (800) = 112.0
       expect(provider.nodes.first.size, closeTo(112.0, 0.001));
+    });
+
+    test('addNode automatically exits add node mode', () {
+      // First enable add node mode
+      provider.toggleAddNodeMode();
+      expect(provider.isAddNodeMode, isTrue);
+
+      // Add a node
+      provider.addNode(const Offset(10, 20));
+
+      // Verify add node mode is automatically disabled
+      expect(provider.isAddNodeMode, isFalse);
+      expect(provider.nodes.length, equals(1));
     });
 
     test('updateNodeText modifies existing node', () {
