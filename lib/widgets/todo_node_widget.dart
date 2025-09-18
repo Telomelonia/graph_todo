@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../models/todo_node.dart';
 import '../providers/canvas_provider.dart';
@@ -144,7 +145,9 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
             onPanUpdate: (details) {
               final provider = context.read<CanvasProvider>();
               // Convert screen delta to canvas coordinates and update position
-              final canvasDelta = details.delta / provider.scale;
+              // Increased sensitivity for web platform mouse dragging
+              final sensitivity = kIsWeb ? 1.5 : 1.1;
+              final canvasDelta = (details.delta * sensitivity) / provider.scale;
               final newPosition = widget.node.position + canvasDelta;
               provider.updateNodePosition(widget.node.id, newPosition);
             },

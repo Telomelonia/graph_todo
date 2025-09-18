@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'providers/canvas_provider.dart';
 import 'widgets/todo_node_widget.dart';
@@ -137,20 +138,18 @@ class _CanvasWidgetState extends State<CanvasWidget> {
             return Listener(
           onPointerSignal: (pointerSignal) {
             if (pointerSignal is PointerScrollEvent) {
-              // Check if this is a trackpad pan gesture (has both x and y components)
-              // vs mouse wheel zoom (typically only has y component)
-              final deltaX = pointerSignal.scrollDelta.dx;
               final deltaY = pointerSignal.scrollDelta.dy;
+              final deltaX = pointerSignal.scrollDelta.dx;
               
-              // If there's significant horizontal movement, treat as pan
-              if (deltaX.abs() > 0.1 || (deltaX.abs() > 0 && deltaY.abs() > 0)) {
-                // Two-finger trackpad panning with reduced sensitivity
-                provider.updatePanOffset(Offset(deltaX, deltaY) * -0.5);
-              } else if (deltaY.abs() > 0.1) {
-                // Mouse wheel or single-direction trackpad zoom
-                final zoomFactor = deltaY > 0 ? 1.1 : 0.9;
+              // Handle both mouse wheel and trackpad scroll for zoom
+              if (deltaY.abs() > 0.1) {
+                final zoomFactor = deltaY > 0 ? 1.05 : 0.95;
                 final newScale = provider.scale * zoomFactor;
                 provider.setZoom(newScale, pointerSignal.localPosition);
+              }
+              // Handle horizontal trackpad scroll for panning
+              else if (deltaX.abs() > 0.1) {
+                provider.updatePanOffset(Offset(deltaX * -0.8, 0));
               }
             }
           },
@@ -180,19 +179,23 @@ class _CanvasWidgetState extends State<CanvasWidget> {
             },
             onScaleUpdate: (details) {
               if (details.pointerCount == 1) {
-                // Single finger - pan the canvas if no node is being dragged
+                // Single finger/mouse - pan the canvas if no node is being dragged
                 if (provider.draggedNode == null) {
-                  provider.updatePanOffset(details.focalPointDelta);
+                  // Increased sensitivity for web platform mouse panning
+                  final sensitivity = kIsWeb ? 1.5 : 1.1;
+                  provider.updatePanOffset(details.focalPointDelta * sensitivity);
                 }
               } else if (details.pointerCount == 2) {
-                // Two fingers - check if this is zoom or pan
-                if ((details.scale - 1.0).abs() > 0.01) {
-                  // Significant scale change - zoom the canvas
+                // Two fingers - enhanced trackpad gesture handling
+                final scaleChange = (details.scale - 1.0).abs();
+                
+                if (scaleChange > 0.005) {
+                  // Pinch-to-zoom gesture detected - prioritize zoom over pan
                   final newScale = _lastScale * details.scale;
                   provider.setZoom(newScale, details.localFocalPoint);
-                } else {
-                  // No significant scale change - pan the canvas with reduced sensitivity
-                  provider.updatePanOffset(details.focalPointDelta * 0.7);
+                } else if (details.focalPointDelta.distance > 2.0) {
+                  // Two-finger pan gesture - only if not zooming
+                  provider.updatePanOffset(details.focalPointDelta * 1.2);
                 }
               }
             },
@@ -287,6 +290,27 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Controls instruction (only for web)
+                if (kIsWeb)
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'Scroll wheel: zoom • Drag: pan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
                         ),
                       ),
                     ),
