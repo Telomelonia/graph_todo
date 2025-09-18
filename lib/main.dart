@@ -182,7 +182,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                 // Single finger/mouse - pan the canvas if no node is being dragged
                 if (provider.draggedNode == null) {
                   // Increased sensitivity for web platform mouse panning
-                  final sensitivity = kIsWeb ? 1.5 : 1.1;
+                  const sensitivity = kIsWeb ? 1.5 : 1.1;
                   provider.updatePanOffset(details.focalPointDelta * sensitivity);
                 }
               } else if (details.pointerCount == 2) {
