@@ -17,7 +17,7 @@ class TodoNode {
     this.size = 60.0,
   });
 
-  // Convert to JSON for storage
+  // Convert to JSON for Firebase storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -26,6 +26,8 @@ class TodoNode {
       'isCompleted': isCompleted,
       'color': color.toARGB32(),
       'size': size,
+      'createdAt': DateTime.now().millisecondsSinceEpoch,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
     };
   }
 

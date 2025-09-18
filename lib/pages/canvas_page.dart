@@ -1,0 +1,391 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
+import '../providers/canvas_provider.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/todo_node_widget.dart';
+import '../widgets/connection_painter.dart';
+
+class CanvasPage extends StatelessWidget {
+  const CanvasPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1A1A1A),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2A2A2A),
+        elevation: 0,
+        title: const Text(
+          'GraphTodo',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        actions: [
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              return Row(
+                children: [
+                  Text(
+                    authProvider.user?.email ?? 'User',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () async {
+                      try {
+                        await authProvider.signOut();
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error signing out: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(
+                      Icons.logout,
+                      color: Colors.white,
+                    ),
+                    tooltip: 'Sign Out',
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+      body: const CanvasWidget(),
+      floatingActionButton: Consumer<CanvasProvider>(
+        builder: (context, provider, child) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FloatingActionButton(
+                heroTag: "addNode",
+                onPressed: provider.toggleAddNodeMode,
+                backgroundColor: provider.isAddNodeMode
+                    ? Colors.grey
+                    : Colors.green,
+                child: Icon(
+                  provider.isAddNodeMode
+                      ? Icons.close
+                      : Icons.add,
+                ),
+              ),
+              const SizedBox(height: 10),
+              FloatingActionButton(
+                heroTag: "connect",
+                onPressed: provider.toggleConnectMode,
+                backgroundColor: provider.isConnectMode
+                    ? Colors.yellow
+                    : Colors.indigo,
+                child: Icon(
+                  provider.isConnectMode
+                      ? Icons.close
+                      : Icons.link,
+                ),
+              ),
+              const SizedBox(height: 10),
+              FloatingActionButton(
+                heroTag: "eraser",
+                onPressed: provider.toggleEraserMode,
+                backgroundColor: provider.isEraserMode
+                    ? Colors.red
+                    : Colors.orange,
+                child: Icon(
+                  provider.isEraserMode
+                      ? Icons.close
+                      : Icons.cleaning_services,
+                ),
+              ),
+              const SizedBox(height: 10),
+              FloatingActionButton(
+                heroTag: "clear",
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Clear Canvas'),
+                      content: const Text('Remove all nodes and connections?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            provider.clearCanvas();
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Clear'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                backgroundColor: Colors.red,
+                child: const Icon(Icons.clear_all),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class CanvasWidget extends StatefulWidget {
+  const CanvasWidget({super.key});
+
+  @override
+  State<CanvasWidget> createState() => _CanvasWidgetState();
+}
+
+class _CanvasWidgetState extends State<CanvasWidget> {
+  double _lastScale = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewSize = Size(constraints.maxWidth, constraints.maxHeight);
+        
+        return Consumer<CanvasProvider>(
+          builder: (context, provider, child) {
+            return Listener(
+          onPointerSignal: (pointerSignal) {
+            if (pointerSignal is PointerScrollEvent) {
+              // Check if this is a trackpad pan gesture (has both x and y components)
+              // vs mouse wheel zoom (typically only has y component)
+              final deltaX = pointerSignal.scrollDelta.dx;
+              final deltaY = pointerSignal.scrollDelta.dy;
+              
+              // If there's significant horizontal movement, treat as pan
+              if (deltaX.abs() > 0.1 || (deltaX.abs() > 0 && deltaY.abs() > 0)) {
+                // Two-finger trackpad panning with reduced sensitivity
+                provider.updatePanOffset(Offset(deltaX, deltaY) * -0.5);
+              } else if (deltaY.abs() > 0.1) {
+                // Mouse wheel or single-direction trackpad zoom
+                final zoomFactor = deltaY > 0 ? 0.9 : 1.1;
+                final newScale = provider.scale * zoomFactor;
+                provider.setZoom(newScale, pointerSignal.localPosition);
+              }
+            }
+          },
+          child: GestureDetector(
+            onTapUp: (details) {
+              // Only create new node if in add node mode and not in connect mode
+              if (!provider.isConnectMode && provider.isAddNodeMode) {
+                // Check if tap is on any existing node using proper hit detection
+                bool tappedOnNode = false;
+                for (final node in provider.nodes) {
+                  if (provider.isPointOnNode(details.localPosition, node)) {
+                    tappedOnNode = true;
+                    break;
+                  }
+                }
+
+                // Create new node if not tapping on existing node
+                if (!tappedOnNode) {
+                  final canvasPosition = provider.screenToCanvas(details.localPosition);
+                  provider.addNode(canvasPosition, viewSize: viewSize);
+                }
+              }
+            },
+            onScaleStart: (details) {
+              // Store the current scale when gesture starts
+              _lastScale = provider.scale;
+            },
+            onScaleUpdate: (details) {
+              if (details.pointerCount == 1) {
+                // Single finger - pan the canvas if no node is being dragged
+                if (provider.draggedNode == null) {
+                  provider.updatePanOffset(details.focalPointDelta);
+                }
+              } else if (details.pointerCount == 2) {
+                // Two fingers - check if this is zoom or pan
+                if ((details.scale - 1.0).abs() > 0.01) {
+                  // Significant scale change - zoom the canvas
+                  final newScale = _lastScale * details.scale;
+                  provider.setZoom(newScale, details.localFocalPoint);
+                } else {
+                  // No significant scale change - pan the canvas with reduced sensitivity
+                  provider.updatePanOffset(details.focalPointDelta * 0.7);
+                }
+              }
+            },
+            onScaleEnd: (details) {
+              // Update the last scale for next gesture
+              _lastScale = provider.scale;
+            },
+            child: Stack(
+              children: [
+                // Background grid (optional)
+                CustomPaint(
+                  painter: GridPainter(
+                    scale: provider.scale,
+                    panOffset: provider.panOffset,
+                  ),
+                  size: Size.infinite,
+                ),
+
+                // Connections layer
+                CustomPaint(
+                  painter: ConnectionPainter(
+                    connections: provider.connections,
+                    nodes: provider.nodes,
+                    scale: provider.scale,
+                    panOffset: provider.panOffset,
+                  ),
+                  size: Size.infinite,
+                ),
+
+                // Nodes layer
+                ...provider.nodes.map(
+                      (node) => TodoNodeWidget(node: node),
+                ),
+
+                // Add node mode indicator
+                if (provider.isAddNodeMode)
+                  Positioned(
+                    top: 50,
+                    left: 20,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Click anywhere to add a new node',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Connection mode indicator
+                if (provider.isConnectMode)
+                  Positioned(
+                    top: 100,
+                    left: 20,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.yellow.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        provider.selectedNodeForConnection == null
+                            ? 'Select first node to connect'
+                            : 'Select second node to connect',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Eraser mode indicator
+                if (provider.isEraserMode)
+                  Positioned(
+                    top: 100,
+                    left: 20,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Click any node to delete it',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Zoom level indicator
+                Positioned(
+                  bottom: 20,
+                  right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${(provider.scale * 100).toInt()}%',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+        );
+          },
+        );
+      },
+    );
+  }
+}
+
+class GridPainter extends CustomPainter {
+  final double scale;
+  final Offset panOffset;
+
+  GridPainter({required this.scale, required this.panOffset});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const gridSize = 50.0;
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.1)
+      ..strokeWidth = 1.0;
+
+    // Only draw grid if scale is reasonable
+    if (scale < 0.3) return;
+
+    final scaledGridSize = gridSize * scale;
+
+    // Calculate visible area
+    final startX = (-panOffset.dx % scaledGridSize);
+    final startY = (-panOffset.dy % scaledGridSize);
+
+    // Draw vertical lines
+    for (double x = startX; x < size.width; x += scaledGridSize) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+
+    // Draw horizontal lines
+    for (double y = startY; y < size.height; y += scaledGridSize) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(GridPainter oldDelegate) {
+    return scale != oldDelegate.scale || panOffset != oldDelegate.panOffset;
+  }
+}

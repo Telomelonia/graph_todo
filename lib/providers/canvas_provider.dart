@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:async';
+import 'dart:developer' as developer;
 import '../models/todo_node.dart';
 import '../models/connection.dart';
+import '../services/firebase_service.dart';
 
 class CanvasProvider with ChangeNotifier {
   final List<TodoNode> _nodes = [];
   final List<Connection> _connections = [];
   final Uuid _uuid = const Uuid();
+  final FirebaseService _firebaseService = FirebaseService();
+  StreamSubscription<List<TodoNode>>? _nodesSubscription;
+  StreamSubscription<List<Connection>>? _connectionsSubscription;
+  bool _isInitialized = false;
 
   // Canvas transform properties
   Offset _panOffset = Offset.zero;
@@ -32,10 +40,58 @@ class CanvasProvider with ChangeNotifier {
   String? get selectedNodeForConnection => _selectedNodeForConnection;
   TodoNode? get draggedNode => _draggedNode;
   String? get newlyCreatedNodeId => _newlyCreatedNodeId;
+  bool get isInitialized => _isInitialized;
+  FirebaseService get firebaseService => _firebaseService;
 
+
+  // Initialize Firebase listeners
+  Future<void> initializeFirebase() async {
+    if (_isInitialized) return;
+    
+    if (_firebaseService.isSignedIn) {
+      try {
+        // Listen to nodes changes
+        _nodesSubscription = _firebaseService.getNodesStream().listen((nodes) {
+          _nodes.clear();
+          _nodes.addAll(nodes);
+          _updateConnectionStates();
+          notifyListeners();
+        });
+        
+        // Listen to connections changes
+        _connectionsSubscription = _firebaseService.getConnectionsStream().listen((connections) {
+          _connections.clear();
+          _connections.addAll(connections);
+          _updateConnectionStates();
+          notifyListeners();
+        });
+        
+        if (kDebugMode) {
+          developer.log('Firebase initialized successfully for user: ${_firebaseService.currentUserId}', name: 'CanvasProvider');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          developer.log('Error initializing Firebase streams: $e', name: 'CanvasProvider', error: e);
+        }
+      }
+    } else {
+      if (kDebugMode) {
+        developer.log('Cannot initialize Firebase: User not signed in', name: 'CanvasProvider');
+      }
+    }
+    
+    _isInitialized = true;
+  }
+  
+  @override
+  void dispose() {
+    _nodesSubscription?.cancel();
+    _connectionsSubscription?.cancel();
+    super.dispose();
+  }
 
   // Add a new node at the given position with immediate editing and zoom
-  void addNode(Offset position, {String text = '', Size? viewSize}) {
+  void addNode(Offset position, {String text = '', Size? viewSize}) async {
     // Calculate base node size as 14% of the smaller screen dimension
     double baseSize = 60.0; // fallback size
     if (viewSize != null) {
@@ -54,7 +110,24 @@ class CanvasProvider with ChangeNotifier {
       position: position,
       size: canvasRelativeSize,
     );
-    _nodes.add(node);
+    
+    // If Firebase is available, add to Firebase, otherwise add locally
+    if (_firebaseService.isSignedIn) {
+      try {
+        await _firebaseService.addNode(node);
+        // Node will be added to local list via stream listener
+      } catch (e) {
+        if (kDebugMode) {
+          developer.log('Error adding node to Firebase: $e', name: 'CanvasProvider', error: e);
+        }
+        // Fall back to local storage
+        _addNodeLocally(node);
+      }
+    } else {
+      // Work offline - add locally
+      _addNodeLocally(node);
+    }
+    
     _newlyCreatedNodeId = node.id; // Mark as newly created for immediate editing
 
     // Zoom to the new node for better editing experience
@@ -64,7 +137,11 @@ class CanvasProvider with ChangeNotifier {
 
     // Auto-exit add node mode after creating a node
     exitAddNodeMode();
-    
+  }
+  
+  // Helper method to add node locally
+  void _addNodeLocally(TodoNode node) {
+    _nodes.add(node);
     notifyListeners();
   }
 
@@ -84,39 +161,56 @@ class CanvasProvider with ChangeNotifier {
   }
 
   // Update node text
-  void updateNodeText(String nodeId, String newText) {
+  void updateNodeText(String nodeId, String newText) async {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
     if (index != -1) {
-      _nodes[index] = _nodes[index].copyWith(text: newText);
-      notifyListeners();
+      final updatedNode = _nodes[index].copyWith(text: newText);
+      try {
+        await _firebaseService.updateNode(updatedNode);
+      } catch (e) {
+        if (kDebugMode) {
+          developer.log('Error updating node text: $e', name: 'CanvasProvider', error: e);
+        }
+      }
     }
   }
 
   // Update node position
-  void updateNodePosition(String nodeId, Offset newPosition) {
+  void updateNodePosition(String nodeId, Offset newPosition) async {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
     if (index != -1) {
-      _nodes[index] = _nodes[index].copyWith(position: newPosition);
-      notifyListeners();
+      final updatedNode = _nodes[index].copyWith(position: newPosition);
+      try {
+        await _firebaseService.updateNode(updatedNode);
+      } catch (e) {
+        if (kDebugMode) {
+          developer.log('Error updating node position: $e', name: 'CanvasProvider', error: e);
+        }
+      }
     }
   }
 
   // Toggle node completion
-  void toggleNodeCompletion(String nodeId) {
+  void toggleNodeCompletion(String nodeId) async {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
     if (index != -1) {
       final wasCompleted = _nodes[index].isCompleted;
-      _nodes[index] = _nodes[index].copyWith(
+      final updatedNode = _nodes[index].copyWith(
         isCompleted: !_nodes[index].isCompleted,
       );
       
-      // If node was just completed, trigger charging animations
-      if (!wasCompleted && _nodes[index].isCompleted) {
-        _startChargingAnimations(nodeId);
+      try {
+        await _firebaseService.updateNode(updatedNode);
+        
+        // If node was just completed, trigger charging animations
+        if (!wasCompleted && updatedNode.isCompleted) {
+          _startChargingAnimations(nodeId);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          developer.log('Error updating node completion: $e', name: 'CanvasProvider', error: e);
+        }
       }
-      
-      _updateConnectionStates();
-      notifyListeners();
     }
   }
 
@@ -177,12 +271,15 @@ class CanvasProvider with ChangeNotifier {
   }
 
   // Remove a node and its connections
-  void removeNode(String nodeId) {
-    _nodes.removeWhere((node) => node.id == nodeId);
-    _connections.removeWhere(
-          (conn) => conn.fromNodeId == nodeId || conn.toNodeId == nodeId,
-    );
-    notifyListeners();
+  void removeNode(String nodeId) async {
+    try {
+      await _firebaseService.deleteNode(nodeId);
+      await _firebaseService.deleteConnectionsForNode(nodeId);
+    } catch (e) {
+      if (kDebugMode) {
+        developer.log('Error removing node: $e', name: 'CanvasProvider', error: e);
+      }
+    }
   }
 
   // Canvas pan and zoom
@@ -281,13 +378,7 @@ class CanvasProvider with ChangeNotifier {
   }
 
   // Create a connection between two nodes
-  void createConnection(String fromNodeId, String toNodeId) {
-    final newConnection = Connection(
-      id: _uuid.v4(),
-      fromNodeId: fromNodeId,
-      toNodeId: toNodeId,
-    );
-
+  void createConnection(String fromNodeId, String toNodeId) async {
     // Check if connection already exists
     final exists = _connections.any(
           (conn) =>
@@ -296,22 +387,38 @@ class CanvasProvider with ChangeNotifier {
     );
 
     if (!exists) {
-      _connections.add(newConnection);
-      _updateConnectionStates();
-      notifyListeners();
+      final newConnection = Connection(
+        id: _uuid.v4(),
+        fromNodeId: fromNodeId,
+        toNodeId: toNodeId,
+      );
+      
+      try {
+        await _firebaseService.addConnection(newConnection);
+      } catch (e) {
+        if (kDebugMode) {
+          developer.log('Error creating connection: $e', name: 'CanvasProvider', error: e);
+        }
+      }
     }
   }
 
   // Update connection green state based on node completion
-  void _updateConnectionStates() {
+  void _updateConnectionStates() async {
     for (int i = 0; i < _connections.length; i++) {
       final conn = _connections[i];
-      final fromNode = _nodes.firstWhere((n) => n.id == conn.fromNodeId);
-      final toNode = _nodes.firstWhere((n) => n.id == conn.toNodeId);
+      try {
+        final fromNode = _nodes.firstWhere((n) => n.id == conn.fromNodeId);
+        final toNode = _nodes.firstWhere((n) => n.id == conn.toNodeId);
 
-      final shouldBeGreen = fromNode.isCompleted && toNode.isCompleted;
-      if (conn.isGreen != shouldBeGreen) {
-        _connections[i] = conn.copyWith(isGreen: shouldBeGreen);
+        final shouldBeGreen = fromNode.isCompleted && toNode.isCompleted;
+        if (conn.isGreen != shouldBeGreen) {
+          final updatedConnection = conn.copyWith(isGreen: shouldBeGreen);
+          await _firebaseService.updateConnection(updatedConnection);
+        }
+      } catch (e) {
+        // Node might not exist anymore, skip this connection
+        continue;
       }
     }
   }
@@ -343,17 +450,22 @@ class CanvasProvider with ChangeNotifier {
   }
 
   // Clear all nodes and connections
-  void clearCanvas() {
-    _nodes.clear();
-    _connections.clear();
-    _panOffset = Offset.zero;
-    _scale = 1.0;
-    _isConnectMode = false;
-    _isAddNodeMode = false;
-    _isEraserMode = false;
-    _selectedNodeForConnection = null;
-    _draggedNode = null;
-    notifyListeners();
+  void clearCanvas() async {
+    try {
+      await _firebaseService.clearAllData();
+      _panOffset = Offset.zero;
+      _scale = 1.0;
+      _isConnectMode = false;
+      _isAddNodeMode = false;
+      _isEraserMode = false;
+      _selectedNodeForConnection = null;
+      _draggedNode = null;
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) {
+        developer.log('Error clearing canvas: $e', name: 'CanvasProvider', error: e);
+      }
+    }
   }
 
   // Clear the newly created node flag when editing is complete

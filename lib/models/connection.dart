@@ -17,7 +17,7 @@ class Connection {
     this.chargingFromNodeId,
   });
 
-  // Convert to JSON for storage
+  // Convert to JSON for Firebase storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -27,6 +27,8 @@ class Connection {
       'isCharging': isCharging,
       'chargingProgress': chargingProgress,
       'chargingFromNodeId': chargingFromNodeId,
+      'createdAt': DateTime.now().millisecondsSinceEpoch,
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
     };
   }
 
