@@ -148,7 +148,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                 provider.updatePanOffset(Offset(deltaX, deltaY) * -0.5);
               } else if (deltaY.abs() > 0.1) {
                 // Mouse wheel or single-direction trackpad zoom
-                final zoomFactor = deltaY > 0 ? 0.9 : 1.1;
+                final zoomFactor = deltaY > 0 ? 1.1 : 0.9;
                 final newScale = provider.scale * zoomFactor;
                 provider.setZoom(newScale, pointerSignal.localPosition);
               }
