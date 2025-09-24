@@ -24,9 +24,12 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   late Animation<double> _hoverAnimation;
   late AnimationController _connectorPulseController;
   late Animation<double> _connectorPulseAnimation;
+  late AnimationController _completionHoverController;
+  late Animation<double> _completionHoverAnimation;
   final TextEditingController _textController = TextEditingController();
   bool _isEditing = false;
   bool _isHovered = false;
+  bool _isCompletionHovered = false;
 
   @override
   void initState() {
@@ -72,6 +75,19 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       curve: Curves.easeInOut,
     ));
 
+    // Setup completion hover animation
+    _completionHoverController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _completionHoverAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _completionHoverController,
+      curve: Curves.easeOutBack,
+    ));
+
     // Start glow animation if node is completed
     if (widget.node.isCompleted) {
       _glowController.forward();
@@ -112,6 +128,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     _glowController.dispose();
     _hoverController.dispose();
     _connectorPulseController.dispose();
+    _completionHoverController.dispose();
     _textController.dispose();
     super.dispose();
   }
@@ -127,10 +144,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     } else if (_isHovered && !provider.isConnectMode) {
       // If hovering and not in connect mode, start connection from this node
       provider.startConnectionFromNode(widget.node.id);
-    } else {
-      // Toggle completion
-      provider.toggleNodeCompletion(widget.node.id);
     }
+    // Removed the else case - completion now happens only via the center hover area
   }
 
   void _handleHover(bool isHovered) {
@@ -149,6 +164,32 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     } else {
       _hoverController.reverse();
       _connectorPulseController.stop();
+    }
+  }
+
+  void _handleCompletionHover(bool isHovered) {
+    final provider = context.read<CanvasProvider>();
+    
+    // Only show completion hover if not in special modes and not editing
+    if (provider.isEraserMode || provider.isConnectMode || _isEditing) return;
+    
+    setState(() {
+      _isCompletionHovered = isHovered;
+    });
+
+    if (isHovered) {
+      _completionHoverController.forward();
+    } else {
+      _completionHoverController.reverse();
+    }
+  }
+
+  void _handleCompletionTap() {
+    final provider = context.read<CanvasProvider>();
+    
+    // Only allow completion toggle if not in special modes
+    if (!provider.isEraserMode && !provider.isConnectMode) {
+      provider.toggleNodeCompletion(widget.node.id);
     }
   }
 
@@ -213,7 +254,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                 context.read<CanvasProvider>().endDrag();
               },
               child: AnimatedBuilder(
-                animation: Listenable.merge([_glowAnimation, _hoverAnimation, _connectorPulseAnimation]),
+                animation: Listenable.merge([_glowAnimation, _hoverAnimation, _connectorPulseAnimation, _completionHoverAnimation]),
                 builder: (context, child) {
                   return Stack(
                     clipBehavior: Clip.none,
@@ -232,6 +273,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                         ),
                         child: _buildContent(provider.scale),
                       ),
+                      // Completion hover area in the center
+                      _buildCompletionHoverArea(scaledSize, provider.scale),
                       // Hover connector indicators
                       if (_isHovered && !provider.isEraserMode && !_isEditing && !provider.isConnectMode)
                         ..._buildConnectorIndicators(scaledSize, provider.scale),
@@ -417,5 +460,81 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
         ),
       );
     }).toList();
+  }
+
+  Widget _buildCompletionHoverArea(double scaledSize, double scale) {
+    final provider = context.watch<CanvasProvider>();
+    
+    // Don't show completion hover area if in special modes or editing
+    if (provider.isEraserMode || provider.isConnectMode || _isEditing) {
+      return const SizedBox.shrink();
+    }
+    
+    return Positioned(
+      left: scaledSize * 0.375,  // Center a smaller area (25% of node size)
+      top: scaledSize * 0.375,
+      child: MouseRegion(
+        onEnter: (_) => _handleCompletionHover(true),
+        onExit: (_) => _handleCompletionHover(false),
+        child: GestureDetector(
+          onTap: _handleCompletionTap,
+          child: AnimatedBuilder(
+            animation: _completionHoverAnimation,
+            builder: (context, child) {
+              final hoverValue = _completionHoverAnimation.value;
+              final baseSize = scaledSize * 0.25;  // Smaller base size (25% of node)
+              final animatedSize = baseSize + (hoverValue * baseSize * 0.2);  // Less expansion
+              
+              // Calculate offset to keep it centered as it expands
+              final sizeOffset = (animatedSize - baseSize) / 2;
+              
+              return Transform.translate(
+                offset: Offset(-sizeOffset, -sizeOffset),
+                child: Container(
+                  width: animatedSize,
+                  height: animatedSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _isCompletionHovered
+                        ? (widget.node.isCompleted 
+                            ? Colors.orange.withValues(alpha: 0.3 + hoverValue * 0.4)
+                            : Colors.green.withValues(alpha: 0.3 + hoverValue * 0.4))
+                        : Colors.transparent,
+                    border: _isCompletionHovered
+                        ? Border.all(
+                            color: widget.node.isCompleted 
+                                ? Colors.orange.withValues(alpha: 0.8)
+                                : Colors.green.withValues(alpha: 0.8),
+                            width: 1.5 + hoverValue * 1.5,  // Smaller border
+                          )
+                        : null,
+                    boxShadow: _isCompletionHovered
+                        ? [
+                            BoxShadow(
+                              color: (widget.node.isCompleted 
+                                  ? Colors.orange 
+                                  : Colors.green).withValues(alpha: 0.4 * hoverValue),
+                              blurRadius: 6.0 * hoverValue,  // Smaller glow
+                              spreadRadius: 2.0 * hoverValue,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: _isCompletionHovered
+                      ? Center(
+                          child: Icon(
+                            widget.node.isCompleted ? Icons.refresh : Icons.check,
+                            color: widget.node.isCompleted ? Colors.orange : Colors.green,
+                            size: (12.0 + hoverValue * 6.0) * scale.clamp(0.5, 2.0),  // Smaller icon
+                          ),
+                        )
+                      : null,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 }
