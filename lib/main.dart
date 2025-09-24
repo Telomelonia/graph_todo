@@ -151,7 +151,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
               }
               // Handle horizontal trackpad scroll for panning
               else if (deltaX.abs() > 0.1) {
-                provider.updatePanOffset(Offset(deltaX * -0.8, 0));
+                provider.updatePanOffset(Offset(deltaX * -1.5, 0));
               }
             }
           },
@@ -184,7 +184,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                 // Single finger/mouse - pan the canvas if no node is being dragged
                 if (provider.draggedNode == null) {
                   // Increased sensitivity for web platform mouse panning
-                  const sensitivity = kIsWeb ? 1.5 : 1.1;
+                  const sensitivity = kIsWeb ? 2.2 : 1.8;
                   provider.updatePanOffset(details.focalPointDelta * sensitivity);
                 }
               } else if (details.pointerCount == 2) {
@@ -197,7 +197,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                   provider.setZoom(newScale, details.localFocalPoint);
                 } else if (details.focalPointDelta.distance > 2.0) {
                   // Two-finger pan gesture - only if not zooming
-                  provider.updatePanOffset(details.focalPointDelta * 1.2);
+                  provider.updatePanOffset(details.focalPointDelta * 1.8);
                 }
               }
             },
