@@ -55,19 +55,7 @@ class HomePage extends StatelessWidget {
                   provider.isAddNodeMode
                       ? Icons.close
                       : Icons.add,
-                ),
-              ),
-              const SizedBox(height: 10),
-              FloatingActionButton(
-                heroTag: "connect",
-                onPressed: provider.toggleConnectMode,
-                backgroundColor: provider.isConnectMode
-                    ? Colors.yellow
-                    : Colors.indigo,
-                child: Icon(
-                  provider.isConnectMode
-                      ? Icons.close
-                      : Icons.link,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 10),
@@ -80,7 +68,8 @@ class HomePage extends StatelessWidget {
                 child: Icon(
                   provider.isEraserMode
                       ? Icons.close
-                      : Icons.cleaning_services,
+                      : Icons.delete,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 10),
@@ -109,7 +98,10 @@ class HomePage extends StatelessWidget {
                   );
                 },
                 backgroundColor: Colors.red,
-                child: const Icon(Icons.clear_all),
+                child: const Icon(
+                  Icons.clear_all,
+                  color: Colors.white,
+                ),
               ),
             ],
           );
@@ -295,29 +287,6 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                         'Click anywhere to add a new node',
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Connection mode indicator
-                if (provider.isConnectMode)
-                  Positioned(
-                    top: 100,
-                    left: 20,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.yellow.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        provider.selectedNodeForConnection == null
-                            ? 'Select first node to connect'
-                            : 'Select second node to connect',
-                        style: const TextStyle(
-                          color: Colors.black,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
