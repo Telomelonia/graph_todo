@@ -602,67 +602,52 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       return const SizedBox.shrink();
     }
     
-    // Create a larger hover area (1.5x node size) but position the info button in top-right
-    final hoverRadius = scaledSize * 0.75; // 1.5x radius (since scaledSize is diameter)
-    final buttonOffset = scaledSize * 0.3; // Position in top-right quadrant
+    // Position the info button in top-right corner of the node
+    final buttonSize = (16.0 + _infoHoverAnimation.value * 4.0) * scale.clamp(0.5, 2.0);
+    final buttonOffset = 6.0 * scale; // Small offset from the edge
     
     return Positioned(
-      left: scaledSize / 2 - hoverRadius, // Center the hover area
-      top: scaledSize / 2 - hoverRadius,
+      right: buttonOffset,
+      top: buttonOffset,
       child: MouseRegion(
         onEnter: (_) => _handleInfoHover(true),
         onExit: (_) => _handleInfoHover(false),
         child: GestureDetector(
           onTap: _handleInfoTap,
-          child: Container(
-            width: hoverRadius * 2, // Full hover area
-            height: hoverRadius * 2,
-            color: Colors.transparent,
-            child: Stack(
-              children: [
-                // Position info button in top-right of hover area
-                Positioned(
-                  right: hoverRadius - buttonOffset,
-                  top: hoverRadius - buttonOffset,
-                  child: AnimatedBuilder(
-                    animation: _infoHoverAnimation,
-                    builder: (context, child) {
-                      final hoverValue = _infoHoverAnimation.value;
-                      final buttonSize = (16.0 + hoverValue * 4.0) * scale.clamp(0.5, 2.0);
-                      
-                      return Container(
-                        width: buttonSize,
-                        height: buttonSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _isInfoHovered
-                              ? Colors.blue.withValues(alpha: 0.8 + hoverValue * 0.2)
-                              : Colors.grey.withValues(alpha: 0.6),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            width: 1.0 + hoverValue * 0.5,
-                          ),
-                          boxShadow: _isInfoHovered
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.blue.withValues(alpha: 0.5 * hoverValue),
-                                    blurRadius: 4.0 * hoverValue,
-                                    spreadRadius: 1.0 * hoverValue,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Icon(
-                          Icons.info_outline,
-                          color: Colors.white,
-                          size: buttonSize * 0.6,
-                        ),
-                      );
-                    },
+          child: AnimatedBuilder(
+            animation: _infoHoverAnimation,
+            builder: (context, child) {
+              final hoverValue = _infoHoverAnimation.value;
+              
+              return Container(
+                width: buttonSize,
+                height: buttonSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _isInfoHovered
+                      ? Colors.blue.withValues(alpha: 0.8 + hoverValue * 0.2)
+                      : Colors.grey.withValues(alpha: 0.6),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    width: 1.0 + hoverValue * 0.5,
                   ),
+                  boxShadow: _isInfoHovered
+                      ? [
+                          BoxShadow(
+                            color: Colors.blue.withValues(alpha: 0.5 * hoverValue),
+                            blurRadius: 4.0 * hoverValue,
+                            spreadRadius: 1.0 * hoverValue,
+                          ),
+                        ]
+                      : null,
                 ),
-              ],
-            ),
+                child: Icon(
+                  Icons.info_outline,
+                  color: Colors.white,
+                  size: buttonSize * 0.6,
+                ),
+              );
+            },
           ),
         ),
       ),
