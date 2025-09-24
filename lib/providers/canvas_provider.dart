@@ -299,6 +299,10 @@ class CanvasProvider with ChangeNotifier {
       createConnection(_selectedNodeForConnection!, nodeId);
       _selectedNodeForConnection = null;
       _isConnectMode = false;
+    } else {
+      // Same node clicked twice - turn off connector mode
+      _selectedNodeForConnection = null;
+      _isConnectMode = false;
     }
     notifyListeners();
   }

@@ -421,15 +421,15 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
   List<Widget> _buildConnectorIndicators(double scaledSize, double scale) {
     final radius = scaledSize / 2;
-    final connectorSize = 8.0 * scale;
+    final connectorSize = 6.0 * scale;
     final pulseValue = _connectorPulseAnimation.value;
     
-    // Create 4 connector dots around the node
+    // Create 4 connector dots inside the node
     final positions = [
-      Offset(0, -radius - 15), // Top
-      Offset(radius + 15, 0), // Right
-      Offset(0, radius + 15), // Bottom
-      Offset(-radius - 15, 0), // Left
+      Offset(0, -radius * 0.7), // Top
+      Offset(radius * 0.7, 0), // Right
+      Offset(0, radius * 0.7), // Bottom
+      Offset(-radius * 0.7, 0), // Left
     ];
     
     return positions.asMap().entries.map((entry) {
@@ -442,20 +442,20 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
         child: FadeTransition(
           opacity: _hoverAnimation,
           child: Container(
-            width: connectorSize + pulseOffset * 4,
-            height: connectorSize + pulseOffset * 4,
+            width: connectorSize + pulseOffset * 2,
+            height: connectorSize + pulseOffset * 2,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.blue.withValues(alpha: 0.8 - pulseOffset * 0.3),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.9),
-                width: 2.0,
+                width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.blue.withValues(alpha: 0.4),
-                  blurRadius: 8.0,
-                  spreadRadius: pulseOffset * 2,
+                  blurRadius: 6.0,
+                  spreadRadius: pulseOffset * 1.5,
                 ),
               ],
             ),
