@@ -11,6 +11,8 @@ class ConnectionPainter extends CustomPainter {
   final bool isConnectMode;
   final String? selectedNodeForConnection;
   final double animationValue;
+  final String? hoveredConnectionId;
+  final VoidCallback? onConnectionDelete;
 
   ConnectionPainter({
     required this.connections,
@@ -20,6 +22,8 @@ class ConnectionPainter extends CustomPainter {
     this.isConnectMode = false,
     this.selectedNodeForConnection,
     this.animationValue = 0.0,
+    this.hoveredConnectionId,
+    this.onConnectionDelete,
   });
 
   @override
@@ -120,6 +124,9 @@ class ConnectionPainter extends CustomPainter {
       (toNode.size / 2) * scale,
     );
 
+    // Check if this connection is hovered
+    final isHovered = hoveredConnectionId == connection.id;
+
     // Create paint for the connection line
     final scaledStrokeWidth = (3.0 * scale).clamp(1.0, 6.0);
     final paint = Paint()
@@ -128,7 +135,10 @@ class ConnectionPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     // Set color based on connection state
-    if (connection.isGreen) {
+    if (isHovered) {
+      paint.color = Colors.red.withValues(alpha: 0.8);
+      paint.strokeWidth = (5.0 * scale).clamp(2.0, 10.0);
+    } else if (connection.isGreen) {
       paint.color = const Color(0xFF4CAF50);
       paint.strokeWidth = (4.0 * scale).clamp(2.0, 8.0);
 
@@ -152,6 +162,11 @@ class ConnectionPainter extends CustomPainter {
 
     // Draw small circles at connection points
     _drawConnectionDots(canvas, connectionPoints, connection.isGreen, scale);
+
+    // Draw delete cross icon if hovered
+    if (isHovered) {
+      _drawDeleteCross(canvas, connectionPoints, scale);
+    }
   }
 
   void _drawChargingConnection(
@@ -258,6 +273,52 @@ class ConnectionPainter extends CustomPainter {
     return ConnectionPoints(fromPoint, toPoint);
   }
 
+  void _drawDeleteCross(Canvas canvas, ConnectionPoints points, double scale) {
+    // Calculate the middle point of the connection
+    final middlePoint = Offset(
+      (points.from.dx + points.to.dx) / 2,
+      (points.from.dy + points.to.dy) / 2,
+    );
+
+    final crossSize = (12.0 * scale).clamp(8.0, 20.0);
+    
+    // Draw background circle
+    final backgroundPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.red.withValues(alpha: 0.9);
+
+    canvas.drawCircle(middlePoint, crossSize / 2, backgroundPaint);
+
+    // Draw border
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..color = Colors.white;
+
+    canvas.drawCircle(middlePoint, crossSize / 2, borderPaint);
+
+    // Draw the cross lines
+    final crossPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white;
+
+    final crossOffset = crossSize * 0.3;
+
+    // Draw X shape
+    canvas.drawLine(
+      Offset(middlePoint.dx - crossOffset, middlePoint.dy - crossOffset),
+      Offset(middlePoint.dx + crossOffset, middlePoint.dy + crossOffset),
+      crossPaint,
+    );
+    canvas.drawLine(
+      Offset(middlePoint.dx - crossOffset, middlePoint.dy + crossOffset),
+      Offset(middlePoint.dx + crossOffset, middlePoint.dy - crossOffset),
+      crossPaint,
+    );
+  }
+
   Offset _canvasToScreen(Offset canvasPoint) {
     return canvasPoint * scale + panOffset;
   }
@@ -270,7 +331,8 @@ class ConnectionPainter extends CustomPainter {
         panOffset != oldDelegate.panOffset ||
         isConnectMode != oldDelegate.isConnectMode ||
         selectedNodeForConnection != oldDelegate.selectedNodeForConnection ||
-        animationValue != oldDelegate.animationValue;
+        animationValue != oldDelegate.animationValue ||
+        hoveredConnectionId != oldDelegate.hoveredConnectionId;
   }
 }
 

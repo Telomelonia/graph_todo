@@ -20,8 +20,13 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     with TickerProviderStateMixin {
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
+  late AnimationController _hoverController;
+  late Animation<double> _hoverAnimation;
+  late AnimationController _connectorPulseController;
+  late Animation<double> _connectorPulseAnimation;
   final TextEditingController _textController = TextEditingController();
   bool _isEditing = false;
+  bool _isHovered = false;
 
   @override
   void initState() {
@@ -38,6 +43,32 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _glowController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Setup hover animation
+    _hoverController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _hoverAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Setup connector pulse animation
+    _connectorPulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _connectorPulseAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _connectorPulseController,
       curve: Curves.easeInOut,
     ));
 
@@ -79,6 +110,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   @override
   void dispose() {
     _glowController.dispose();
+    _hoverController.dispose();
+    _connectorPulseController.dispose();
     _textController.dispose();
     super.dispose();
   }
@@ -91,9 +124,31 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       provider.removeNode(widget.node.id);
     } else if (provider.isConnectMode) {
       provider.selectNodeForConnection(widget.node.id);
+    } else if (_isHovered && !provider.isConnectMode) {
+      // If hovering and not in connect mode, start connection from this node
+      provider.startConnectionFromNode(widget.node.id);
     } else {
       // Toggle completion
       provider.toggleNodeCompletion(widget.node.id);
+    }
+  }
+
+  void _handleHover(bool isHovered) {
+    final provider = context.read<CanvasProvider>();
+    
+    // Don't show hover connector if in eraser mode or editing
+    if (provider.isEraserMode || _isEditing) return;
+    
+    setState(() {
+      _isHovered = isHovered;
+    });
+
+    if (isHovered) {
+      _hoverController.forward();
+      _connectorPulseController.repeat();
+    } else {
+      _hoverController.reverse();
+      _connectorPulseController.stop();
     }
   }
 
@@ -136,42 +191,54 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
         return Positioned(
           left: screenPosition.dx - scaledSize / 2,
           top: screenPosition.dy - scaledSize / 2,
-          child: GestureDetector(
-            onTap: _handleTap,
-            onDoubleTap: _handleDoubleTap,
-            onPanStart: (details) {
-              context.read<CanvasProvider>().startDrag(widget.node);
-            },
-            onPanUpdate: (details) {
-              final provider = context.read<CanvasProvider>();
-              // Convert screen delta to canvas coordinates and update position
-              // Increased sensitivity for web platform mouse dragging
-              const sensitivity = kIsWeb ? 1.5 : 1.1;
-              final canvasDelta = (details.delta * sensitivity) / provider.scale;
-              final newPosition = widget.node.position + canvasDelta;
-              provider.updateNodePosition(widget.node.id, newPosition);
-            },
-            onPanEnd: (details) {
-              context.read<CanvasProvider>().endDrag();
-            },
-            child: AnimatedBuilder(
-              animation: _glowAnimation,
-              builder: (context, child) {
-                return Container(
-                  width: scaledSize,
-                  height: scaledSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: widget.node.color.withValues(alpha: 0.9),
-                    border: Border.all(
-                      color: _getSelectionColor(),
-                      width: _getSelectionWidth() * provider.scale,
-                    ),
-                    boxShadow: _buildShadows(provider.scale),
-                  ),
-                  child: _buildContent(provider.scale),
-                );
+          child: MouseRegion(
+            onEnter: (_) => _handleHover(true),
+            onExit: (_) => _handleHover(false),
+            child: GestureDetector(
+              onTap: _handleTap,
+              onDoubleTap: _handleDoubleTap,
+              onPanStart: (details) {
+                context.read<CanvasProvider>().startDrag(widget.node);
               },
+              onPanUpdate: (details) {
+                final provider = context.read<CanvasProvider>();
+                // Convert screen delta to canvas coordinates and update position
+                // Increased sensitivity for web platform mouse dragging
+                const sensitivity = kIsWeb ? 1.5 : 1.1;
+                final canvasDelta = (details.delta * sensitivity) / provider.scale;
+                final newPosition = widget.node.position + canvasDelta;
+                provider.updateNodePosition(widget.node.id, newPosition);
+              },
+              onPanEnd: (details) {
+                context.read<CanvasProvider>().endDrag();
+              },
+              child: AnimatedBuilder(
+                animation: Listenable.merge([_glowAnimation, _hoverAnimation, _connectorPulseAnimation]),
+                builder: (context, child) {
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: scaledSize,
+                        height: scaledSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: widget.node.color.withValues(alpha: 0.9),
+                          border: Border.all(
+                            color: _getSelectionColor(),
+                            width: _getSelectionWidth() * provider.scale,
+                          ),
+                          boxShadow: _buildShadows(provider.scale),
+                        ),
+                        child: _buildContent(provider.scale),
+                      ),
+                      // Hover connector indicators
+                      if (_isHovered && !provider.isEraserMode && !_isEditing && !provider.isConnectMode)
+                        ..._buildConnectorIndicators(scaledSize, provider.scale),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         );
@@ -299,5 +366,56 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
         ],
       );
     }
+  }
+
+  List<Widget> _buildConnectorIndicators(double scaledSize, double scale) {
+    final radius = scaledSize / 2;
+    final connectorSize = 8.0 * scale;
+    final pulseValue = _connectorPulseAnimation.value;
+    
+    // Create 4 connector dots around the node
+    final positions = [
+      Offset(0, -radius - 15), // Top
+      Offset(radius + 15, 0), // Right
+      Offset(0, radius + 15), // Bottom
+      Offset(-radius - 15, 0), // Left
+    ];
+    
+    return positions.asMap().entries.map((entry) {
+      final position = entry.value;
+      final pulseOffset = (pulseValue * 2 - 1).abs();
+      
+      return Positioned(
+        left: scaledSize / 2 + position.dx - connectorSize / 2,
+        top: scaledSize / 2 + position.dy - connectorSize / 2,
+        child: FadeTransition(
+          opacity: _hoverAnimation,
+          child: Container(
+            width: connectorSize + pulseOffset * 4,
+            height: connectorSize + pulseOffset * 4,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.blue.withValues(alpha: 0.8 - pulseOffset * 0.3),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.9),
+                width: 2.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.withValues(alpha: 0.4),
+                  blurRadius: 8.0,
+                  spreadRadius: pulseOffset * 2,
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.add,
+              color: Colors.white,
+              size: connectorSize * 0.6,
+            ),
+          ),
+        ),
+      );
+    }).toList();
   }
 }

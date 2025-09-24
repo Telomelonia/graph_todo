@@ -280,6 +280,13 @@ class CanvasProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Start connection from a specific node (hover functionality)
+  void startConnectionFromNode(String nodeId) {
+    _isConnectMode = true;
+    _selectedNodeForConnection = nodeId;
+    notifyListeners();
+  }
+
   // Create a connection between two nodes
   void createConnection(String fromNodeId, String toNodeId) {
     final newConnection = Connection(
@@ -299,6 +306,44 @@ class CanvasProvider with ChangeNotifier {
       _connections.add(newConnection);
       _updateConnectionStates();
       notifyListeners();
+    }
+  }
+
+  // Remove a specific connection by ID
+  void removeConnection(String connectionId) {
+    _connections.removeWhere((conn) => conn.id == connectionId);
+    notifyListeners();
+  }
+
+  // Update connection endpoint to reconnect to a different node
+  void updateConnectionEndpoint(String connectionId, bool isFromEndpoint, String newNodeId) {
+    final connectionIndex = _connections.indexWhere((conn) => conn.id == connectionId);
+    if (connectionIndex != -1) {
+      final connection = _connections[connectionIndex];
+      
+      // Check if the new connection would be valid (not connecting node to itself)
+      final otherNodeId = isFromEndpoint ? connection.toNodeId : connection.fromNodeId;
+      if (newNodeId == otherNodeId) return;
+      
+      // Check if connection already exists
+      final newFromNodeId = isFromEndpoint ? newNodeId : connection.fromNodeId;
+      final newToNodeId = isFromEndpoint ? connection.toNodeId : newNodeId;
+      
+      final exists = _connections.any(
+        (conn) =>
+            conn.id != connectionId && // Don't check against the current connection
+            ((conn.fromNodeId == newFromNodeId && conn.toNodeId == newToNodeId) ||
+             (conn.fromNodeId == newToNodeId && conn.toNodeId == newFromNodeId)),
+      );
+      
+      if (!exists) {
+        _connections[connectionIndex] = connection.copyWith(
+          fromNodeId: newFromNodeId,
+          toNodeId: newToNodeId,
+        );
+        _updateConnectionStates();
+        notifyListeners();
+      }
     }
   }
 

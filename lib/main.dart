@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'providers/canvas_provider.dart';
 import 'widgets/todo_node_widget.dart';
 import 'widgets/connection_painter.dart';
+import 'widgets/interactive_connection_widget.dart';
+import 'widgets/connection_endpoint_widget.dart';
 
 void main() {
   runApp(const GraphTodoApp());
@@ -224,6 +226,54 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                   ),
                   size: Size.infinite,
                 ),
+
+                // Interactive connection deletion layer
+                ...provider.connections.map((connection) {
+                  final fromNode = provider.nodes.firstWhere(
+                    (node) => node.id == connection.fromNodeId,
+                    orElse: () => throw Exception('From node not found'),
+                  );
+                  final toNode = provider.nodes.firstWhere(
+                    (node) => node.id == connection.toNodeId,
+                    orElse: () => throw Exception('To node not found'),
+                  );
+                  
+                  return InteractiveConnectionWidget(
+                    key: Key(connection.id),
+                    connection: connection,
+                    fromNode: fromNode,
+                    toNode: toNode,
+                  );
+                }),
+
+                // Connection endpoint widgets for dragging
+                ...provider.connections.expand((connection) {
+                  final fromNode = provider.nodes.firstWhere(
+                    (node) => node.id == connection.fromNodeId,
+                    orElse: () => throw Exception('From node not found'),
+                  );
+                  final toNode = provider.nodes.firstWhere(
+                    (node) => node.id == connection.toNodeId,
+                    orElse: () => throw Exception('To node not found'),
+                  );
+                  
+                  return [
+                    ConnectionEndpointWidget(
+                      key: Key('${connection.id}_from'),
+                      connection: connection,
+                      fromNode: fromNode,
+                      toNode: toNode,
+                      isFromEndpoint: true,
+                    ),
+                    ConnectionEndpointWidget(
+                      key: Key('${connection.id}_to'),
+                      connection: connection,
+                      fromNode: fromNode,
+                      toNode: toNode,
+                      isFromEndpoint: false,
+                    ),
+                  ];
+                }),
 
                 // Nodes layer
                 ...provider.nodes.map(

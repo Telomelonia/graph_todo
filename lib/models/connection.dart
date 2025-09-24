@@ -45,6 +45,8 @@ class Connection {
 
   // Create a copy with updated properties
   Connection copyWith({
+    String? fromNodeId,
+    String? toNodeId,
     bool? isGreen,
     bool? isCharging,
     double? chargingProgress,
@@ -52,8 +54,8 @@ class Connection {
   }) {
     return Connection(
       id: id,
-      fromNodeId: fromNodeId,
-      toNodeId: toNodeId,
+      fromNodeId: fromNodeId ?? this.fromNodeId,
+      toNodeId: toNodeId ?? this.toNodeId,
       isGreen: isGreen ?? this.isGreen,
       isCharging: isCharging ?? this.isCharging,
       chargingProgress: chargingProgress ?? this.chargingProgress,
