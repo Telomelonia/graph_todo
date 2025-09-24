@@ -26,10 +26,13 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   late Animation<double> _connectorPulseAnimation;
   late AnimationController _completionHoverController;
   late Animation<double> _completionHoverAnimation;
+  late AnimationController _infoHoverController;
+  late Animation<double> _infoHoverAnimation;
   final TextEditingController _textController = TextEditingController();
   bool _isEditing = false;
   bool _isHovered = false;
   bool _isCompletionHovered = false;
+  bool _isInfoHovered = false;
 
   @override
   void initState() {
@@ -88,6 +91,19 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       curve: Curves.easeOutBack,
     ));
 
+    // Setup info hover animation
+    _infoHoverController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _infoHoverAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _infoHoverController,
+      curve: Curves.easeInOut,
+    ));
+
     // Start glow animation if node is completed
     if (widget.node.isCompleted) {
       _glowController.forward();
@@ -129,12 +145,16 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     _hoverController.dispose();
     _connectorPulseController.dispose();
     _completionHoverController.dispose();
+    _infoHoverController.dispose();
     _textController.dispose();
     super.dispose();
   }
 
   void _handleTap() {
     final provider = context.read<CanvasProvider>();
+    
+    // Prevent interactions when info panel is open
+    if (provider.isInfoPanelOpen) return;
 
     if (provider.isEraserMode) {
       // Delete the node when in eraser mode
@@ -151,8 +171,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   void _handleHover(bool isHovered) {
     final provider = context.read<CanvasProvider>();
     
-    // Don't show hover connector if in eraser mode or editing
-    if (provider.isEraserMode || _isEditing) return;
+    // Don't show hover connector if in eraser mode, editing, or info panel is open
+    if (provider.isEraserMode || _isEditing || provider.isInfoPanelOpen) return;
     
     setState(() {
       _isHovered = isHovered;
@@ -170,8 +190,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   void _handleCompletionHover(bool isHovered) {
     final provider = context.read<CanvasProvider>();
     
-    // Only show completion hover if not in special modes and not editing
-    if (provider.isEraserMode || provider.isConnectMode || _isEditing) return;
+    // Only show completion hover if not in special modes, not editing, and info panel is not open
+    if (provider.isEraserMode || provider.isConnectMode || _isEditing || provider.isInfoPanelOpen) return;
     
     setState(() {
       _isCompletionHovered = isHovered;
@@ -184,18 +204,44 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     }
   }
 
+  void _handleInfoHover(bool isHovered) {
+    final provider = context.read<CanvasProvider>();
+    
+    // Only show info hover if not in special modes, not editing, and info panel is not open
+    if (provider.isEraserMode || provider.isConnectMode || _isEditing || provider.isInfoPanelOpen) return;
+    
+    setState(() {
+      _isInfoHovered = isHovered;
+    });
+
+    if (isHovered) {
+      _infoHoverController.forward();
+    } else {
+      _infoHoverController.reverse();
+    }
+  }
+
   void _handleCompletionTap() {
     final provider = context.read<CanvasProvider>();
     
-    // Only allow completion toggle if not in special modes
-    if (!provider.isEraserMode && !provider.isConnectMode) {
+    // Only allow completion toggle if not in special modes and info panel is not open
+    if (!provider.isEraserMode && !provider.isConnectMode && !provider.isInfoPanelOpen) {
       provider.toggleNodeCompletion(widget.node.id);
+    }
+  }
+
+  void _handleInfoTap() {
+    final provider = context.read<CanvasProvider>();
+    
+    // Only allow info panel opening if not in special modes
+    if (!provider.isEraserMode && !provider.isConnectMode && !provider.isInfoPanelOpen) {
+      provider.showNodeInfo(widget.node.id);
     }
   }
 
   void _handleDoubleTap() {
     final provider = context.read<CanvasProvider>();
-    if (!provider.isConnectMode && !provider.isEraserMode) {
+    if (!provider.isConnectMode && !provider.isEraserMode && !provider.isInfoPanelOpen) {
       // Get screen size for zoom calculation
       final mediaQuery = MediaQuery.maybeOf(context);
       if (mediaQuery != null) {
@@ -262,7 +308,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                 context.read<CanvasProvider>().endDrag();
               },
               child: AnimatedBuilder(
-                animation: Listenable.merge([_glowAnimation, _hoverAnimation, _connectorPulseAnimation, _completionHoverAnimation]),
+                animation: Listenable.merge([_glowAnimation, _hoverAnimation, _connectorPulseAnimation, _completionHoverAnimation, _infoHoverAnimation]),
                 builder: (context, child) {
                   return Stack(
                     clipBehavior: Clip.none,
@@ -283,6 +329,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                       ),
                       // Completion hover area in the center
                       _buildCompletionHoverArea(scaledSize, provider.scale),
+                      // Info button hover area
+                      _buildInfoHoverArea(scaledSize, provider.scale),
                       // Hover connector indicators
                       if (_isHovered && !provider.isEraserMode && !_isEditing && !provider.isConnectMode)
                         ..._buildConnectorIndicators(scaledSize, provider.scale),
@@ -540,6 +588,81 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                 ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoHoverArea(double scaledSize, double scale) {
+    final provider = context.watch<CanvasProvider>();
+    
+    // Don't show info hover area if in special modes, editing, or info panel is open
+    if (provider.isEraserMode || provider.isConnectMode || _isEditing || provider.isInfoPanelOpen) {
+      return const SizedBox.shrink();
+    }
+    
+    // Create a larger hover area (1.5x node size) but position the info button in top-right
+    final hoverRadius = scaledSize * 0.75; // 1.5x radius (since scaledSize is diameter)
+    final buttonOffset = scaledSize * 0.3; // Position in top-right quadrant
+    
+    return Positioned(
+      left: scaledSize / 2 - hoverRadius, // Center the hover area
+      top: scaledSize / 2 - hoverRadius,
+      child: MouseRegion(
+        onEnter: (_) => _handleInfoHover(true),
+        onExit: (_) => _handleInfoHover(false),
+        child: GestureDetector(
+          onTap: _handleInfoTap,
+          child: Container(
+            width: hoverRadius * 2, // Full hover area
+            height: hoverRadius * 2,
+            color: Colors.transparent,
+            child: Stack(
+              children: [
+                // Position info button in top-right of hover area
+                Positioned(
+                  right: hoverRadius - buttonOffset,
+                  top: hoverRadius - buttonOffset,
+                  child: AnimatedBuilder(
+                    animation: _infoHoverAnimation,
+                    builder: (context, child) {
+                      final hoverValue = _infoHoverAnimation.value;
+                      final buttonSize = (16.0 + hoverValue * 4.0) * scale.clamp(0.5, 2.0);
+                      
+                      return Container(
+                        width: buttonSize,
+                        height: buttonSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isInfoHovered
+                              ? Colors.blue.withValues(alpha: 0.8 + hoverValue * 0.2)
+                              : Colors.grey.withValues(alpha: 0.6),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            width: 1.0 + hoverValue * 0.5,
+                          ),
+                          boxShadow: _isInfoHovered
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.blue.withValues(alpha: 0.5 * hoverValue),
+                                    blurRadius: 4.0 * hoverValue,
+                                    spreadRadius: 1.0 * hoverValue,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                          size: buttonSize * 0.6,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

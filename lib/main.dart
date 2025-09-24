@@ -7,6 +7,7 @@ import 'widgets/todo_node_widget.dart';
 import 'widgets/connection_painter.dart';
 import 'widgets/interactive_connection_widget.dart';
 import 'widgets/connection_endpoint_widget.dart';
+import 'widgets/info_panel_widget.dart';
 
 void main() {
   runApp(const GraphTodoApp());
@@ -149,6 +150,24 @@ class _CanvasWidgetState extends State<CanvasWidget> {
           },
           child: GestureDetector(
             onTapUp: (details) {
+              // Close info panel if clicking on canvas and info panel is open
+              if (provider.isInfoPanelOpen) {
+                // Check if tap is on any existing node using proper hit detection
+                bool tappedOnNode = false;
+                for (final node in provider.nodes) {
+                  if (provider.isPointOnNode(details.localPosition, node)) {
+                    tappedOnNode = true;
+                    break;
+                  }
+                }
+                
+                // Close info panel if clicking on empty canvas
+                if (!tappedOnNode) {
+                  provider.hideNodeInfo();
+                }
+                return;
+              }
+              
               // Only create new node if in add node mode and not in connect mode
               if (!provider.isConnectMode && provider.isAddNodeMode) {
                 // Check if tap is on any existing node using proper hit detection
@@ -172,6 +191,9 @@ class _CanvasWidgetState extends State<CanvasWidget> {
               _lastScale = provider.scale;
             },
             onScaleUpdate: (details) {
+              // Prevent panning when info panel is open
+              if (provider.isInfoPanelOpen) return;
+              
               if (details.pointerCount == 1) {
                 // Single finger/mouse - pan the canvas if no node is being dragged
                 if (provider.draggedNode == null) {
@@ -271,6 +293,18 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                 ...provider.nodes.map(
                       (node) => TodoNodeWidget(node: node),
                 ),
+
+                // Info panel layer
+                if (provider.isInfoPanelOpen && provider.nodeShowingInfo != null)
+                  Builder(
+                    builder: (context) {
+                      final node = provider.nodes.firstWhere(
+                        (n) => n.id == provider.nodeShowingInfo,
+                        orElse: () => throw Exception('Node showing info not found'),
+                      );
+                      return InfoPanelWidget(node: node);
+                    },
+                  ),
 
                 // Add node mode indicator
                 if (provider.isAddNodeMode)

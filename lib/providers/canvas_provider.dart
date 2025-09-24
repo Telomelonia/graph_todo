@@ -19,6 +19,7 @@ class CanvasProvider with ChangeNotifier {
   String? _selectedNodeForConnection;
   TodoNode? _draggedNode;
   String? _newlyCreatedNodeId; // Track newly created node for immediate editing
+  String? _nodeShowingInfo; // Track which node is showing info panel
   
 
   // Getters
@@ -32,6 +33,8 @@ class CanvasProvider with ChangeNotifier {
   String? get selectedNodeForConnection => _selectedNodeForConnection;
   TodoNode? get draggedNode => _draggedNode;
   String? get newlyCreatedNodeId => _newlyCreatedNodeId;
+  String? get nodeShowingInfo => _nodeShowingInfo;
+  bool get isInfoPanelOpen => _nodeShowingInfo != null;
 
 
   // Add a new node at the given position with immediate editing and zoom
@@ -432,6 +435,35 @@ class CanvasProvider with ChangeNotifier {
   void clearNewlyCreatedFlag() {
     _newlyCreatedNodeId = null;
     notifyListeners();
+  }
+
+  // Info panel management
+  void showNodeInfo(String nodeId) {
+    _nodeShowingInfo = nodeId;
+    notifyListeners();
+  }
+
+  void hideNodeInfo() {
+    _nodeShowingInfo = null;
+    notifyListeners();
+  }
+
+  // Update node description
+  void updateNodeDescription(String nodeId, String newDescription) {
+    final index = _nodes.indexWhere((node) => node.id == nodeId);
+    if (index != -1) {
+      _nodes[index] = _nodes[index].copyWith(description: newDescription);
+      notifyListeners();
+    }
+  }
+
+  // Update node color
+  void updateNodeColor(String nodeId, Color newColor) {
+    final index = _nodes.indexWhere((node) => node.id == nodeId);
+    if (index != -1) {
+      _nodes[index] = _nodes[index].copyWith(color: newColor);
+      notifyListeners();
+    }
   }
 }
 
