@@ -11,8 +11,8 @@ void main() {
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(CanvasWidget), findsOneWidget);
     
-    // Check for floating action buttons
-    expect(find.byType(FloatingActionButton), findsNWidgets(3));
+    // Check for floating action buttons (add, connect, eraser, clear)
+    expect(find.byType(FloatingActionButton), findsNWidgets(4));
     
     // Check for add node button
     expect(find.byIcon(Icons.add), findsOneWidget);

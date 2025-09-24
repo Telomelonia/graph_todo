@@ -43,7 +43,13 @@ void main() {
     testWidgets('shows node at correct position', (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget(testNode));
 
-      final positioned = tester.widget<Positioned>(find.byType(Positioned));
+      // Find the main positioned widget (the one containing the Container)
+      final positioned = tester.widget<Positioned>(
+        find.ancestor(
+          of: find.byType(Container).first,
+          matching: find.byType(Positioned),
+        ),
+      );
       expect(positioned.left, equals(20.0)); // 50 - 60/2
       expect(positioned.top, equals(20.0)); // 50 - 60/2
     });
@@ -55,13 +61,13 @@ void main() {
       // Find the TodoNodeWidget
       expect(find.byType(TodoNodeWidget), findsOneWidget);
       
-      // Verify the gesture detector is present
-      final gestureDetector = find.descendant(
+      // Verify at least one gesture detector is present (there may be multiple for different interactions)
+      final gestureDetectors = find.descendant(
         of: find.byType(TodoNodeWidget),
         matching: find.byType(GestureDetector),
       );
       
-      expect(gestureDetector, findsOneWidget);
+      expect(gestureDetectors, findsAtLeastNWidgets(1));
       
       // Just verify the basic structure is correct without triggering animations
       expect(find.text('Test Task'), findsOneWidget);

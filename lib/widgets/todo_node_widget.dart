@@ -196,6 +196,14 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   void _handleDoubleTap() {
     final provider = context.read<CanvasProvider>();
     if (!provider.isConnectMode && !provider.isEraserMode) {
+      // Get screen size for zoom calculation
+      final mediaQuery = MediaQuery.maybeOf(context);
+      if (mediaQuery != null) {
+        final screenSize = mediaQuery.size;
+        // Zoom to node with consistent 14% screen size ratio
+        provider.zoomToNodeForEditing(widget.node.id, screenSize);
+      }
+      
       setState(() {
         _isEditing = true;
       });

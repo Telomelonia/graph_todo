@@ -57,9 +57,9 @@ class CanvasProvider with ChangeNotifier {
     _nodes.add(node);
     _newlyCreatedNodeId = node.id; // Mark as newly created for immediate editing
 
-    // Zoom to the new node for better editing experience
+    // Zoom to the new node for better editing experience using consistent 14% screen size
     if (viewSize != null) {
-      zoomToNodeWithScreenSize(node.id, viewSize);
+      zoomToNodeForEditing(node.id, viewSize);
     }
 
     // Auto-exit add node mode after creating a node
@@ -80,6 +80,29 @@ class CanvasProvider with ChangeNotifier {
 
     _panOffset = targetPanOffset;
     _scale = targetScale;
+    notifyListeners();
+  }
+
+  // Zoom to node for editing with consistent 14% screen size ratio
+  void zoomToNodeForEditing(String nodeId, Size screenSize) {
+    final node = _nodes.firstWhere((n) => n.id == nodeId);
+    
+    // Calculate target scale to make node 14% of screen size
+    // node.size * targetScale = 14% of smaller screen dimension
+    final targetScreenSize = (screenSize.width < screenSize.height ? screenSize.width : screenSize.height) * 0.14;
+    final targetScale = targetScreenSize / node.size;
+    
+    // Clamp the scale to reasonable bounds
+    final clampedScale = targetScale.clamp(0.1, 5.0);
+    
+    // Calculate the center of the screen
+    final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
+    
+    // Set the pan offset so the node appears at screen center
+    final targetPanOffset = screenCenter - (node.position * clampedScale);
+    
+    _panOffset = targetPanOffset;
+    _scale = clampedScale;
     notifyListeners();
   }
 
