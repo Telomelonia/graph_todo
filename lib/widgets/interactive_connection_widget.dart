@@ -51,7 +51,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
         );
         
         // Create a hitbox around the connection line
-        final hitboxSize = 20.0 * provider.scale.clamp(0.5, 2.0);
+        final hitboxSize = 24.0 * provider.scale.clamp(0.8, 2.0);
         
         return Positioned(
           left: middlePoint.dx - hitboxSize / 2,
@@ -61,10 +61,8 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
             onExit: (_) => setState(() => _isHovered = false),
             child: GestureDetector(
               onTap: () {
-                // Delete the connection when clicked while hovered
-                if (_isHovered) {
-                  provider.removeConnection(widget.connection.id);
-                }
+                // Delete the connection when clicked (works for both hover and tap)
+                provider.removeConnection(widget.connection.id);
               },
               child: Container(
                 width: hitboxSize,
@@ -72,16 +70,22 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: _isHovered 
-                      ? Colors.red.withValues(alpha: 0.3)
-                      : Colors.transparent,
+                      ? Colors.red.withValues(alpha: 0.4)
+                      : Colors.transparent, // Only visible on hover
+                  border: _isHovered 
+                      ? Border.all(
+                          color: Colors.red.withValues(alpha: 0.8),
+                          width: 2.0,
+                        )
+                      : null,
                 ),
-                child: _isHovered
+                child: _isHovered 
                     ? Icon(
                         Icons.close,
                         color: Colors.white,
-                        size: hitboxSize * 0.6,
+                        size: hitboxSize * 0.5,
                       )
-                    : null,
+                    : null, // Only show icon on hover
               ),
             ),
           ),
