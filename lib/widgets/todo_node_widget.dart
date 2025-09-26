@@ -20,19 +20,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     with TickerProviderStateMixin {
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
-  late AnimationController _hoverController;
-  late Animation<double> _hoverAnimation;
-  late AnimationController _connectorPulseController;
-  late Animation<double> _connectorPulseAnimation;
-  late AnimationController _completionHoverController;
-  late Animation<double> _completionHoverAnimation;
-  late AnimationController _infoHoverController;
-  late Animation<double> _infoHoverAnimation;
   final TextEditingController _textController = TextEditingController();
   bool _isEditing = false;
-  bool _isHovered = false;
-  bool _isCompletionHovered = false;
-  bool _isInfoHovered = false;
 
   @override
   void initState() {
@@ -49,58 +38,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _glowController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Setup hover animation
-    _hoverController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _hoverAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _hoverController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Setup connector pulse animation
-    _connectorPulseController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _connectorPulseAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _connectorPulseController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Setup completion hover animation
-    _completionHoverController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _completionHoverAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _completionHoverController,
-      curve: Curves.easeOutBack,
-    ));
-
-    // Setup info hover animation
-    _infoHoverController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _infoHoverAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _infoHoverController,
       curve: Curves.easeInOut,
     ));
 
@@ -142,10 +79,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   @override
   void dispose() {
     _glowController.dispose();
-    _hoverController.dispose();
-    _connectorPulseController.dispose();
-    _completionHoverController.dispose();
-    _infoHoverController.dispose();
     _textController.dispose();
     super.dispose();
   }
@@ -156,87 +89,40 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     // Prevent interactions when info panel is open
     if (provider.isInfoPanelOpen) return;
 
+    // Handle special modes
     if (provider.isEraserMode) {
-      // Delete the node when in eraser mode
       provider.removeNode(widget.node.id);
+      return;
     } else if (provider.isConnectMode) {
       provider.selectNodeForConnection(widget.node.id);
-    } else if (_isHovered && !provider.isConnectMode) {
-      // If hovering and not in connect mode, start connection from this node
-      provider.startConnectionFromNode(widget.node.id);
+      return;
     }
-    // Removed the else case - completion now happens only via the center hover area
-  }
 
-  void _handleHover(bool isHovered) {
-    final provider = context.read<CanvasProvider>();
-    
-    // Don't show hover connector if in eraser mode, editing, or info panel is open
-    if (provider.isEraserMode || _isEditing || provider.isInfoPanelOpen) return;
-    
-    setState(() {
-      _isHovered = isHovered;
-    });
-
-    if (isHovered) {
-      _hoverController.forward();
-      _connectorPulseController.repeat();
-    } else {
-      _hoverController.reverse();
-      _connectorPulseController.stop();
-    }
-  }
-
-  void _handleCompletionHover(bool isHovered) {
-    final provider = context.read<CanvasProvider>();
-    
-    // Only show completion hover if not in special modes, not editing, and info panel is not open
-    if (provider.isEraserMode || provider.isConnectMode || _isEditing || provider.isInfoPanelOpen) return;
-    
-    setState(() {
-      _isCompletionHovered = isHovered;
-    });
-
-    if (isHovered) {
-      _completionHoverController.forward();
-    } else {
-      _completionHoverController.reverse();
-    }
-  }
-
-  void _handleInfoHover(bool isHovered) {
-    final provider = context.read<CanvasProvider>();
-    
-    // Only show info hover if not in special modes, not editing, and info panel is not open
-    if (provider.isEraserMode || provider.isConnectMode || _isEditing || provider.isInfoPanelOpen) return;
-    
-    setState(() {
-      _isInfoHovered = isHovered;
-    });
-
-    if (isHovered) {
-      _infoHoverController.forward();
-    } else {
-      _infoHoverController.reverse();
-    }
+    // In normal mode, toggle action buttons
+    provider.toggleNodeActionButtons(widget.node.id);
   }
 
   void _handleCompletionTap() {
     final provider = context.read<CanvasProvider>();
-    
-    // Only allow completion toggle if not in special modes and info panel is not open
-    if (!provider.isEraserMode && !provider.isConnectMode && !provider.isInfoPanelOpen) {
-      provider.toggleNodeCompletion(widget.node.id);
-    }
+    provider.toggleNodeCompletion(widget.node.id);
+    provider.hideNodeActionButtons();
+  }
+
+  void _handleConnectorTap() {
+    final provider = context.read<CanvasProvider>();
+    provider.startConnectionFromNode(widget.node.id);
+    provider.hideNodeActionButtons();
+  }
+
+  void _handleDeleteTap() {
+    final provider = context.read<CanvasProvider>();
+    provider.removeNode(widget.node.id);
   }
 
   void _handleInfoTap() {
     final provider = context.read<CanvasProvider>();
-    
-    // Only allow info panel opening if not in special modes
-    if (!provider.isEraserMode && !provider.isConnectMode && !provider.isInfoPanelOpen) {
-      provider.showNodeInfo(widget.node.id);
-    }
+    provider.showNodeInfo(widget.node.id);
+    provider.hideNodeActionButtons();
   }
 
   void _handleDoubleTap() {
@@ -283,63 +169,56 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
         // Scale the node size based on canvas scale
         final scaledSize = widget.node.size * provider.scale;
 
-        return Positioned(
-          left: screenPosition.dx - scaledSize / 2,
-          top: screenPosition.dy - scaledSize / 2,
-          child: MouseRegion(
-            onEnter: (_) => _handleHover(true),
-            onExit: (_) => _handleHover(false),
-            child: GestureDetector(
-              onTap: _handleTap,
-              onDoubleTap: _handleDoubleTap,
-              onPanStart: (details) {
-                context.read<CanvasProvider>().startDrag(widget.node);
-              },
-              onPanUpdate: (details) {
-                final provider = context.read<CanvasProvider>();
-                // Convert screen delta to canvas coordinates and update position
-                // Increased sensitivity for web platform mouse dragging
-                const sensitivity = kIsWeb ? 2.0 : 1.6;
-                final canvasDelta = (details.delta * sensitivity) / provider.scale;
-                final newPosition = widget.node.position + canvasDelta;
-                provider.updateNodePosition(widget.node.id, newPosition);
-              },
-              onPanEnd: (details) {
-                context.read<CanvasProvider>().endDrag();
-              },
-              child: AnimatedBuilder(
-                animation: Listenable.merge([_glowAnimation, _hoverAnimation, _connectorPulseAnimation, _completionHoverAnimation, _infoHoverAnimation]),
-                builder: (context, child) {
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: scaledSize,
-                        height: scaledSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: widget.node.color.withValues(alpha: 0.9),
-                          border: Border.all(
-                            color: _getSelectionColor(),
-                            width: _getSelectionWidth() * provider.scale,
-                          ),
-                          boxShadow: _buildShadows(provider.scale),
-                        ),
-                        child: _buildContent(provider.scale),
-                      ),
-                      // Completion hover area in the center
-                      _buildCompletionHoverArea(scaledSize, provider.scale),
-                      // Info button hover area
-                      _buildInfoHoverArea(scaledSize, provider.scale),
-                      // Hover connector indicators
-                      if (_isHovered && !provider.isEraserMode && !_isEditing && !provider.isConnectMode)
-                        ..._buildConnectorIndicators(scaledSize, provider.scale),
-                    ],
-                  );
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Main node
+            Positioned(
+              left: screenPosition.dx - scaledSize / 2,
+              top: screenPosition.dy - scaledSize / 2,
+              child: GestureDetector(
+                onTap: _handleTap,
+                onDoubleTap: _handleDoubleTap,
+                onPanStart: (details) {
+                  context.read<CanvasProvider>().startDrag(widget.node);
                 },
+                onPanUpdate: (details) {
+                  final provider = context.read<CanvasProvider>();
+                  // Convert screen delta to canvas coordinates and update position
+                  // Increased sensitivity for web platform mouse dragging
+                  const sensitivity = kIsWeb ? 2.0 : 1.6;
+                  final canvasDelta = (details.delta * sensitivity) / provider.scale;
+                  final newPosition = widget.node.position + canvasDelta;
+                  provider.updateNodePosition(widget.node.id, newPosition);
+                },
+                onPanEnd: (details) {
+                  context.read<CanvasProvider>().endDrag();
+                },
+                child: AnimatedBuilder(
+                  animation: _glowAnimation,
+                  builder: (context, child) {
+                    return Container(
+                      width: scaledSize,
+                      height: scaledSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: widget.node.color.withValues(alpha: 0.9),
+                        border: Border.all(
+                          color: _getSelectionColor(),
+                          width: _getSelectionWidth() * provider.scale,
+                        ),
+                        boxShadow: _buildShadows(provider.scale),
+                      ),
+                      child: _buildContent(provider.scale),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
+            // Action buttons (separate from node gesture detector)
+            if (provider.nodeWithActiveButtons == widget.node.id && !_isEditing)
+              ..._buildActionButtons(screenPosition.dx, screenPosition.dy, scaledSize, provider.scale),
+          ],
         );
       },
     );
@@ -395,7 +274,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
     return shadows;
   }
-
 
   Widget _buildContent(double scale) {
     if (_isEditing) {
@@ -467,190 +345,72 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     }
   }
 
-  List<Widget> _buildConnectorIndicators(double scaledSize, double scale) {
-    final radius = scaledSize / 2;
-    final connectorSize = 6.0 * scale;
-    final pulseValue = _connectorPulseAnimation.value;
+  List<Widget> _buildActionButtons(double centerX, double centerY, double scaledSize, double scale) {
+    final buttonSize = 32.0 * scale.clamp(0.8, 1.5);
+    final radius = scaledSize / 2 + buttonSize + 8;
     
-    // Create 4 connector dots inside the node
-    final positions = [
-      Offset(0, -radius * 0.7), // Top
-      Offset(radius * 0.7, 0), // Right
-      Offset(0, radius * 0.7), // Bottom
-      Offset(-radius * 0.7, 0), // Left
+    // Define button positions around the node (top, right, bottom, left)
+    final buttonPositions = [
+      {'offset': Offset(0, -radius), 'icon': widget.node.isCompleted ? Icons.refresh : Icons.check, 'color': widget.node.isCompleted ? Colors.orange : Colors.green, 'onTap': _handleCompletionTap},
+      {'offset': Offset(radius, 0), 'icon': Icons.link, 'color': Colors.purple, 'onTap': _handleConnectorTap},
+      {'offset': Offset(0, radius), 'icon': Icons.delete, 'color': Colors.red, 'onTap': _handleDeleteTap},
+      {'offset': Offset(-radius, 0), 'icon': Icons.info, 'color': Colors.blue, 'onTap': _handleInfoTap},
     ];
-    
-    return positions.asMap().entries.map((entry) {
-      final position = entry.value;
-      final pulseOffset = (pulseValue * 2 - 1).abs();
+
+    return buttonPositions.asMap().entries.map((entry) {
+      final index = entry.key;
+      final buttonData = entry.value;
+      final offset = buttonData['offset'] as Offset;
+      final icon = buttonData['icon'] as IconData;
+      final color = buttonData['color'] as Color;
+      final onTap = buttonData['onTap'] as VoidCallback;
       
       return Positioned(
-        left: scaledSize / 2 + position.dx - connectorSize / 2,
-        top: scaledSize / 2 + position.dy - connectorSize / 2,
-        child: FadeTransition(
-          opacity: _hoverAnimation,
-          child: Container(
-            width: connectorSize + pulseOffset * 2,
-            height: connectorSize + pulseOffset * 2,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.blue.withValues(alpha: 0.8 - pulseOffset * 0.3),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.9),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withValues(alpha: 0.4),
-                  blurRadius: 6.0,
-                  spreadRadius: pulseOffset * 1.5,
+        left: centerX + offset.dx - buttonSize / 2,
+        top: centerY + offset.dy - buttonSize / 2,
+        child: AnimatedScale(
+          scale: 1.0,
+          duration: Duration(milliseconds: 300 + (index * 75)),
+          curve: Curves.elasticOut,
+          child: AnimatedOpacity(
+            opacity: 1.0,
+            duration: Duration(milliseconds: 200 + (index * 50)),
+            curve: Curves.easeOut,
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                width: buttonSize,
+                height: buttonSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: 0.9),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    width: 2.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 8.0,
+                      offset: const Offset(0, 2),
+                    ),
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.3),
+                      blurRadius: 12.0,
+                      spreadRadius: 2.0,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(
-              Icons.add,
-              color: Colors.white,
-              size: connectorSize * 0.6,
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: buttonSize * 0.5,
+                ),
+              ),
             ),
           ),
         ),
       );
     }).toList();
-  }
-
-  Widget _buildCompletionHoverArea(double scaledSize, double scale) {
-    final provider = context.watch<CanvasProvider>();
-    
-    // Don't show completion hover area if in special modes or editing
-    if (provider.isEraserMode || provider.isConnectMode || _isEditing) {
-      return const SizedBox.shrink();
-    }
-    
-    return Positioned(
-      left: scaledSize * 0.375,  // Center a smaller area (25% of node size)
-      top: scaledSize * 0.375,
-      child: MouseRegion(
-        onEnter: (_) => _handleCompletionHover(true),
-        onExit: (_) => _handleCompletionHover(false),
-        child: GestureDetector(
-          onTap: _handleCompletionTap,
-          child: AnimatedBuilder(
-            animation: _completionHoverAnimation,
-            builder: (context, child) {
-              final hoverValue = _completionHoverAnimation.value;
-              final baseSize = scaledSize * 0.25;  // Smaller base size (25% of node)
-              final animatedSize = baseSize + (hoverValue * baseSize * 0.2);  // Less expansion
-              
-              // Calculate offset to keep it centered as it expands
-              final sizeOffset = (animatedSize - baseSize) / 2;
-              
-              return Transform.translate(
-                offset: Offset(-sizeOffset, -sizeOffset),
-                child: Container(
-                  width: animatedSize,
-                  height: animatedSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _isCompletionHovered
-                        ? (widget.node.isCompleted 
-                            ? Colors.orange.withValues(alpha: 0.3 + hoverValue * 0.4)
-                            : Colors.green.withValues(alpha: 0.3 + hoverValue * 0.4))
-                        : Colors.transparent,
-                    border: _isCompletionHovered
-                        ? Border.all(
-                            color: widget.node.isCompleted 
-                                ? Colors.orange.withValues(alpha: 0.8)
-                                : Colors.green.withValues(alpha: 0.8),
-                            width: 1.5 + hoverValue * 1.5,  // Smaller border
-                          )
-                        : null,
-                    boxShadow: _isCompletionHovered
-                        ? [
-                            BoxShadow(
-                              color: (widget.node.isCompleted 
-                                  ? Colors.orange 
-                                  : Colors.green).withValues(alpha: 0.4 * hoverValue),
-                              blurRadius: 6.0 * hoverValue,  // Smaller glow
-                              spreadRadius: 2.0 * hoverValue,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: _isCompletionHovered
-                      ? Center(
-                          child: Icon(
-                            widget.node.isCompleted ? Icons.refresh : Icons.check,
-                            color: widget.node.isCompleted ? Colors.orange : Colors.green,
-                            size: (12.0 + hoverValue * 6.0) * scale.clamp(0.5, 2.0),  // Smaller icon
-                          ),
-                        )
-                      : null,
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoHoverArea(double scaledSize, double scale) {
-    final provider = context.watch<CanvasProvider>();
-    
-    // Don't show info hover area if in special modes, editing, or info panel is open
-    if (provider.isEraserMode || provider.isConnectMode || _isEditing || provider.isInfoPanelOpen) {
-      return const SizedBox.shrink();
-    }
-    
-    // Position the info button in top-right corner of the node
-    final buttonSize = (16.0 + _infoHoverAnimation.value * 4.0) * scale.clamp(0.5, 2.0);
-    final buttonOffset = 6.0 * scale; // Small offset from the edge
-    
-    return Positioned(
-      right: buttonOffset,
-      top: buttonOffset,
-      child: MouseRegion(
-        onEnter: (_) => _handleInfoHover(true),
-        onExit: (_) => _handleInfoHover(false),
-        child: GestureDetector(
-          onTap: _handleInfoTap,
-          child: AnimatedBuilder(
-            animation: _infoHoverAnimation,
-            builder: (context, child) {
-              final hoverValue = _infoHoverAnimation.value;
-              
-              return Container(
-                width: buttonSize,
-                height: buttonSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _isInfoHovered
-                      ? Colors.blue.withValues(alpha: 0.8 + hoverValue * 0.2)
-                      : Colors.grey.withValues(alpha: 0.6),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    width: 1.0 + hoverValue * 0.5,
-                  ),
-                  boxShadow: _isInfoHovered
-                      ? [
-                          BoxShadow(
-                            color: Colors.blue.withValues(alpha: 0.5 * hoverValue),
-                            blurRadius: 4.0 * hoverValue,
-                            spreadRadius: 1.0 * hoverValue,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Icon(
-                  Icons.info_outline,
-                  color: Colors.white,
-                  size: buttonSize * 0.6,
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
   }
 }

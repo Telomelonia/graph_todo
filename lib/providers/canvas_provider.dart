@@ -20,6 +20,7 @@ class CanvasProvider with ChangeNotifier {
   TodoNode? _draggedNode;
   String? _newlyCreatedNodeId; // Track newly created node for immediate editing
   String? _nodeShowingInfo; // Track which node is showing info panel
+  String? _nodeWithActiveButtons; // Track which node has active action buttons
   
 
   // Getters
@@ -35,6 +36,7 @@ class CanvasProvider with ChangeNotifier {
   String? get newlyCreatedNodeId => _newlyCreatedNodeId;
   String? get nodeShowingInfo => _nodeShowingInfo;
   bool get isInfoPanelOpen => _nodeShowingInfo != null;
+  String? get nodeWithActiveButtons => _nodeWithActiveButtons;
 
 
   // Add a new node at the given position with immediate editing and zoom
@@ -428,6 +430,7 @@ class CanvasProvider with ChangeNotifier {
     _isEraserMode = false;
     _selectedNodeForConnection = null;
     _draggedNode = null;
+    _nodeWithActiveButtons = null;
     notifyListeners();
   }
 
@@ -464,6 +467,27 @@ class CanvasProvider with ChangeNotifier {
       _nodes[index] = _nodes[index].copyWith(color: newColor);
       notifyListeners();
     }
+  }
+
+  // Active buttons management
+  void showNodeActionButtons(String nodeId) {
+    _nodeWithActiveButtons = nodeId;
+    notifyListeners();
+  }
+
+  void hideNodeActionButtons() {
+    _nodeWithActiveButtons = null;
+    notifyListeners();
+  }
+
+  // Toggle node action buttons
+  void toggleNodeActionButtons(String nodeId) {
+    if (_nodeWithActiveButtons == nodeId) {
+      _nodeWithActiveButtons = null;
+    } else {
+      _nodeWithActiveButtons = nodeId;
+    }
+    notifyListeners();
   }
 }
 

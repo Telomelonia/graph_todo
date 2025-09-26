@@ -164,40 +164,28 @@ class _CanvasWidgetState extends State<CanvasWidget> {
           },
           child: GestureDetector(
             onTapUp: (details) {
-              // Close info panel if clicking on canvas and info panel is open
-              if (provider.isInfoPanelOpen) {
-                // Check if tap is on any existing node using proper hit detection
-                bool tappedOnNode = false;
-                for (final node in provider.nodes) {
-                  if (provider.isPointOnNode(details.localPosition, node)) {
-                    tappedOnNode = true;
-                    break;
-                  }
+              // Check if tap is on any existing node using proper hit detection
+              bool tappedOnNode = false;
+              for (final node in provider.nodes) {
+                if (provider.isPointOnNode(details.localPosition, node)) {
+                  tappedOnNode = true;
+                  break;
                 }
-                
-                // Close info panel if clicking on empty canvas
-                if (!tappedOnNode) {
+              }
+
+              // If clicking on empty canvas, hide action buttons and info panel
+              if (!tappedOnNode) {
+                provider.hideNodeActionButtons();
+                if (provider.isInfoPanelOpen) {
                   provider.hideNodeInfo();
+                  return;
                 }
-                return;
               }
               
               // Only create new node if in add node mode and not in connect mode
-              if (!provider.isConnectMode && provider.isAddNodeMode) {
-                // Check if tap is on any existing node using proper hit detection
-                bool tappedOnNode = false;
-                for (final node in provider.nodes) {
-                  if (provider.isPointOnNode(details.localPosition, node)) {
-                    tappedOnNode = true;
-                    break;
-                  }
-                }
-
-                // Create new node if not tapping on existing node
-                if (!tappedOnNode) {
-                  final canvasPosition = provider.screenToCanvas(details.localPosition);
-                  provider.addNode(canvasPosition, viewSize: viewSize);
-                }
+              if (!provider.isConnectMode && provider.isAddNodeMode && !tappedOnNode) {
+                final canvasPosition = provider.screenToCanvas(details.localPosition);
+                provider.addNode(canvasPosition, viewSize: viewSize);
               }
             },
             onScaleStart: (details) {
