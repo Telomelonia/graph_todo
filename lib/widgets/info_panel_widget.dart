@@ -67,27 +67,55 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
   Widget build(BuildContext context) {
     final provider = context.read<CanvasProvider>();
     final screenSize = MediaQuery.of(context).size;
-    final nodeScreenPosition = provider.canvasToScreen(widget.node.position);
-    final scaledNodeSize = widget.node.size * provider.scale;
-
-    // Calculate panel position - try to position it to the right of the node
-    double panelLeft = nodeScreenPosition.dx + scaledNodeSize / 2 + 20;
-    double panelTop = nodeScreenPosition.dy - 100;
-
-    // Adjust if panel would go off screen
-    const panelWidth = 300.0;
-    final panelHeight = screenSize.height * 0.6; // Use 60% of screen height
     
-    if (panelLeft + panelWidth > screenSize.width - 20) {
-      // Position to the left of the node instead
-      panelLeft = nodeScreenPosition.dx - scaledNodeSize / 2 - panelWidth - 20;
+    // Calculate responsive panel dimensions
+    final panelWidth = (screenSize.width * 0.85).clamp(280.0, 400.0);
+    final panelHeight = (screenSize.height * 0.7).clamp(300.0, 500.0);
+    
+    // Calculate ideal positions to center both node and panel in view
+    final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
+    
+    // For mobile screens (narrow), position panel below the centered node
+    // For larger screens, position panel to the side
+    final isMobile = screenSize.width < 600;
+    
+    late double panelLeft;
+    late double panelTop;
+    late double targetScale;
+    late Offset nodeTargetPosition;
+    
+    if (isMobile) {
+      // Mobile layout: node at top center, panel below
+      targetScale = 1.2;
+      nodeTargetPosition = Offset(screenCenter.dx, screenSize.height * 0.25);
+      panelLeft = (screenSize.width - panelWidth) / 2;
+      panelTop = screenSize.height * 0.45;
+    } else {
+      // Desktop layout: node on left, panel on right, both centered vertically
+      targetScale = 1.5;
+      nodeTargetPosition = Offset(screenSize.width * 0.3, screenCenter.dy);
+      panelLeft = screenSize.width * 0.55;
+      panelTop = (screenSize.height - panelHeight) / 2;
+      
+      // Ensure panel doesn't go off screen
+      if (panelLeft + panelWidth > screenSize.width - 20) {
+        panelLeft = screenSize.width - panelWidth - 20;
+      }
     }
     
-    if (panelTop < 20) {
-      panelTop = 20;
-    } else if (panelTop + panelHeight > screenSize.height - 20) {
-      panelTop = screenSize.height - panelHeight - 20;
-    }
+    // Ensure panel fits on screen
+    panelLeft = panelLeft.clamp(20.0, screenSize.width - panelWidth - 20);
+    panelTop = panelTop.clamp(20.0, screenSize.height - panelHeight - 20);
+    
+    // Auto-adjust view to center node and panel
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final targetPanOffset = nodeTargetPosition - (widget.node.position * targetScale);
+      if ((provider.panOffset - targetPanOffset).distance > 10 || 
+          (provider.scale - targetScale).abs() > 0.1) {
+        provider.updatePanOffset(targetPanOffset - provider.panOffset);
+        provider.updateScale(targetScale);
+      }
+    });
 
     return Positioned(
       left: panelLeft,

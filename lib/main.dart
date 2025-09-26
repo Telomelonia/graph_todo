@@ -61,6 +61,20 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               FloatingActionButton(
+                heroTag: "connect",
+                onPressed: provider.toggleConnectMode,
+                backgroundColor: provider.isConnectMode
+                    ? Colors.blue
+                    : Colors.purple,
+                child: Icon(
+                  provider.isConnectMode
+                      ? Icons.close
+                      : Icons.link,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
+              FloatingActionButton(
                 heroTag: "eraser",
                 onPressed: provider.toggleEraserMode,
                 backgroundColor: provider.isEraserMode
@@ -327,10 +341,33 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     ),
                   ),
 
+                // Connection mode indicator
+                if (provider.isConnectMode)
+                  Positioned(
+                    top: 100,
+                    left: 20,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        provider.selectedNodeForConnection == null
+                            ? 'Click first node to connect'
+                            : 'Click second node to complete connection',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
                 // Eraser mode indicator
                 if (provider.isEraserMode)
                   Positioned(
-                    top: 100,
+                    top: 150,
                     left: 20,
                     child: Container(
                       padding: const EdgeInsets.all(16),
