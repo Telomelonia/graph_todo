@@ -50,8 +50,8 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
           (fromPoint.dy + toPoint.dy) / 2,
         );
         
-        // Create a hitbox around the connection line
-        final hitboxSize = 24.0 * provider.scale.clamp(0.8, 2.0);
+        // Create a larger hitbox around the connection line for better interaction
+        final hitboxSize = 32.0 * provider.scale.clamp(0.8, 2.0);
         
         return Positioned(
           left: middlePoint.dx - hitboxSize / 2,
@@ -61,7 +61,7 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
             onExit: (_) => setState(() => _isHovered = false),
             child: GestureDetector(
               onTap: () {
-                // Delete the connection when clicked (works for both hover and tap)
+                // Delete the connection when clicked
                 provider.removeConnection(widget.connection.id);
               },
               child: Container(
@@ -70,22 +70,34 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: _isHovered 
-                      ? Colors.red.withValues(alpha: 0.4)
-                      : Colors.transparent, // Only visible on hover
+                      ? Colors.red.withValues(alpha: 0.5)
+                      : Colors.transparent,
                   border: _isHovered 
                       ? Border.all(
-                          color: Colors.red.withValues(alpha: 0.8),
-                          width: 2.0,
+                          color: Colors.red.withValues(alpha: 0.9),
+                          width: 2.5,
                         )
                       : null,
+                  // Add shadow for better visibility over nodes
+                  boxShadow: _isHovered ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 4.0,
+                      offset: const Offset(0, 2),
+                    ),
+                  ] : null,
                 ),
                 child: _isHovered 
                     ? Icon(
                         Icons.close,
                         color: Colors.white,
-                        size: hitboxSize * 0.5,
+                        size: hitboxSize * 0.4,
                       )
-                    : null, // Only show icon on hover
+                    : SizedBox(
+                        // Invisible but clickable area when not hovered
+                        width: hitboxSize,
+                        height: hitboxSize,
+                      ),
               ),
             ),
           ),

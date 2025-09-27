@@ -215,7 +215,12 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                   size: Size.infinite,
                 ),
 
-                // Interactive connection deletion layer
+                // Nodes layer
+                ...provider.nodes.map(
+                      (node) => TodoNodeWidget(node: node),
+                ),
+
+                // Interactive connection deletion layer (rendered on top of nodes for better hover detection)
                 ...provider.connections.map((connection) {
                   final fromNode = provider.nodes.firstWhere(
                     (node) => node.id == connection.fromNodeId,
@@ -234,7 +239,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                   );
                 }),
 
-                // Connection endpoint widgets for dragging
+                // Connection endpoint widgets for dragging (on top for interaction)
                 ...provider.connections.expand((connection) {
                   final fromNode = provider.nodes.firstWhere(
                     (node) => node.id == connection.fromNodeId,
@@ -262,11 +267,6 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     ),
                   ];
                 }),
-
-                // Nodes layer
-                ...provider.nodes.map(
-                      (node) => TodoNodeWidget(node: node),
-                ),
 
                 // Info panel layer
                 if (provider.isInfoPanelOpen && provider.nodeShowingInfo != null)
