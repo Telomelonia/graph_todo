@@ -16,7 +16,7 @@ class TodoNode {
     required this.position,
     this.isCompleted = false,
     this.color = const Color(0xFF6366F1), // Default indigo color
-    this.size = 60.0,
+    this.size = 120.0,
   });
 
   // Convert to JSON for storage
@@ -41,7 +41,7 @@ class TodoNode {
       position: Offset(json['position']['dx'], json['position']['dy']),
       isCompleted: json['isCompleted'] ?? false,
       color: Color(json['color'] ?? 0xFF6366F1),
-      size: json['size']?.toDouble() ?? 60.0,
+      size: json['size']?.toDouble() ?? 100.0,
     );
   }
 

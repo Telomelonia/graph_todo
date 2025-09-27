@@ -41,10 +41,10 @@ class CanvasProvider with ChangeNotifier {
 
   // Add a new node at the given position with immediate editing and zoom
   void addNode(Offset position, {String text = '', Size? viewSize}) {
-    // Calculate base node size as 14% of the smaller screen dimension
-    double baseSize = 60.0; // fallback size
+    // Calculate base node size as 20% of the smaller screen dimension
+    double baseSize = 140.0; // fallback size
     if (viewSize != null) {
-      baseSize = (viewSize.width < viewSize.height ? viewSize.width : viewSize.height) * 0.14;
+      baseSize = (viewSize.width < viewSize.height ? viewSize.width : viewSize.height) * 0.20;
     }
 
     // Calculate node size inversely proportional to scale
@@ -92,9 +92,9 @@ class CanvasProvider with ChangeNotifier {
   void zoomToNodeForEditing(String nodeId, Size screenSize) {
     final node = _nodes.firstWhere((n) => n.id == nodeId);
     
-    // Calculate target scale to make node 14% of screen size
-    // node.size * targetScale = 14% of smaller screen dimension
-    final targetScreenSize = (screenSize.width < screenSize.height ? screenSize.width : screenSize.height) * 0.14;
+    // Calculate target scale to make node 20% of screen size
+    // node.size * targetScale = 20% of smaller screen dimension
+    final targetScreenSize = (screenSize.width < screenSize.height ? screenSize.width : screenSize.height) * 0.20;
     final targetScale = targetScreenSize / node.size;
     
     // Clamp the scale to reasonable bounds

@@ -1,11 +1,11 @@
 {
-    "name": "graph_todo",
-    "short_name": "graph_todo",
+    "name": "GraphTodo - Visual Task Manager",
+    "short_name": "GraphTodo",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#3F51B5",
+    "theme_color": "#3F51B5",
+    "description": "Interactive graph-based todo management system with visual connections and task relationships.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

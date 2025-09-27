@@ -19,7 +19,7 @@ class GraphTodoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'GraphTodo',
+      title: 'GraphTodo - Visual Task Manager',
       theme: ThemeData(
         primarySwatch: Colors.indigo,
         useMaterial3: true,
@@ -56,20 +56,6 @@ class HomePage extends StatelessWidget {
                   provider.isAddNodeMode
                       ? Icons.close
                       : Icons.add,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 10),
-              FloatingActionButton(
-                heroTag: "eraser",
-                onPressed: provider.toggleEraserMode,
-                backgroundColor: provider.isEraserMode
-                    ? Colors.red
-                    : Colors.orange,
-                child: Icon(
-                  provider.isEraserMode
-                      ? Icons.close
-                      : Icons.delete,
                   color: Colors.white,
                 ),
               ),

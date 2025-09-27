@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#3F51B5" stroke="#2c387e" stroke-width="8"/>
+  
+  <!-- Connection lines -->
+  <line x1="150" y1="180" x2="250" y2="120" stroke="#FFD700" stroke-width="6" stroke-linecap="round"/>
+  <line x1="250" y1="120" x2="380" y2="200" stroke="#FFD700" stroke-width="6" stroke-linecap="round"/>
+  <line x1="150" y1="180" x2="200" y2="300" stroke="#FFD700" stroke-width="6" stroke-linecap="round"/>
+  <line x1="200" y1="300" x2="350" y2="320" stroke="#FFD700" stroke-width="6" stroke-linecap="round"/>
+  <line x1="350" y1="320" x2="380" y2="200" stroke="#FFD700" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Todo nodes (circles with checkmarks) -->
+  <!-- Top node (completed) -->
+  <circle cx="250" cy="120" r="35" fill="#4CAF50" stroke="white" stroke-width="4"/>
+  <path d="M235 115 L245 125 L265 105" stroke="white" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Left node (completed) -->
+  <circle cx="150" cy="180" r="35" fill="#4CAF50" stroke="white" stroke-width="4"/>
+  <path d="M135 175 L145 185 L165 165" stroke="white" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Right node (pending) -->
+  <circle cx="380" cy="200" r="35" fill="#FF9800" stroke="white" stroke-width="4"/>
+  <circle cx="380" cy="200" r="12" fill="white"/>
+  
+  <!-- Bottom left node (pending) -->
+  <circle cx="200" cy="300" r="35" fill="#FF9800" stroke="white" stroke-width="4"/>
+  <circle cx="200" cy="300" r="12" fill="white"/>
+  
+  <!-- Bottom right node (completed) -->
+  <circle cx="350" cy="320" r="35" fill="#4CAF50" stroke="white" stroke-width="4"/>
+  <path d="M335 315 L345 325 L365 305" stroke="white" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- App title text -->
+  <text x="256" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="36" font-weight="bold">GraphTodo</text>
+</svg>
