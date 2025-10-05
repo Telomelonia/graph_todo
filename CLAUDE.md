@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 GraphTodo is a Flutter application that implements an interactive graph-based todo management system. Users can create todo nodes on a canvas, connect them to show relationships, and visualize task completion through golden connections when both linked tasks are completed.
 
-**Current Version**: v0.4.0+ (evolved from v0.3.0)
+**Current Version**: v0.5.0+ (evolved from v0.4.1)
 **Target Platforms**: iOS, Android, Web, macOS, Windows
 **Flutter SDK**: ^3.8.0
 
@@ -53,15 +53,16 @@ GraphTodo is a Flutter application that implements an interactive graph-based to
 - Canvas state including grid visibility and zoom level
 
 **Data Models** (`lib/models/`):
-- `TodoNode` (`todo_node.dart`): Represents individual todo items with position, completion state, description, color, and visual properties
+- `TodoNode` (`todo_node.dart`): Represents individual todo items with position, completion state, title, description, icon, color, and visual properties
 - `Connection` (`connection.dart`): Represents relationships between nodes with golden state for completed connections and visual feedback
 
 **UI Architecture** (`lib/widgets/`):
 - `main.dart`: Entry point with Material app setup and theme configuration
 - `CanvasWidget`: Main interactive canvas with gesture handling, multi-touch support, and coordinate transformations
-- `TodoNodeWidget` (`todo_node_widget.dart`): Individual node rendering with action buttons, editing, animations, and drag functionality
+- `TodoNodeWidget` (`todo_node_widget.dart`): Individual node rendering with icon display, action buttons, animations, and drag functionality
+- `IconSelectorWidget` (`icon_selector_widget.dart`): Searchable icon picker with 70+ curated skill tree icons across categories
 - `ConnectionPainter` (`connection_painter.dart`): Custom painter for drawing connections with multiple visual states
-- `InfoPanelWidget` (`info_panel_widget.dart`): Side panel for node details, description editing, and color customization
+- `InfoPanelWidget` (`info_panel_widget.dart`): Side panel for node title/description editing, icon selection, and color customization
 - `InteractiveConnectionWidget` (`interactive_connection_widget.dart`): Enhanced connection system with visual feedback
 - `ConnectionEndpointWidget` (`connection_endpoint_widget.dart`): Connection points with hover states and animations
 
@@ -81,10 +82,11 @@ GraphTodo is a Flutter application that implements an interactive graph-based to
 
 **Node Management**:
 - Individual node action buttons (edit, connect, delete)
-- Rich text editing with multi-line support
+- Icon-based visual representation with 70+ curated skill tree icons
+- Searchable icon picker with categories (combat, magic, tech, creative, etc.)
 - Custom color picker for node personalization
 - Completion state with center hover animations
-- Description panel for detailed task information
+- Title and description editing in dedicated info panel
 - Drag and drop repositioning with visual feedback
 
 **Enhanced Connection System**:
@@ -153,12 +155,12 @@ The project includes comprehensive test coverage organized by component type:
 - Use widget tests for UI components
 - Unit test business logic in providers and models
 
-## Recent Improvements (v0.4.0+)
+## Recent Improvements (v0.5.0+)
 
-- Enhanced node action button system with improved UI
-- Refined connection deletion and info panel layout
-- Improved connector interaction reliability
-- Added description and color picker functionality
-- Consistent zoom focus for node editing
-- Center hover animations for task completion
-- Better visual feedback and user experience
+- **Major UI Transformation**: Replaced text-based nodes with icon-based skill tree interface
+- **Icon System**: 70+ curated emojis across categories (combat, magic, tech, creative, business, etc.)
+- **Enhanced Info Panel**: Dedicated title/description editing with searchable icon picker
+- **Improved UX**: Double-tap nodes now opens info panel instead of inline editing
+- **Visual Hierarchy**: Better task categorization and visual scanning with icons
+- **Backward Compatibility**: Existing saves work seamlessly with new icon system
+- **Technical**: Extended TodoNode model, new IconSelectorWidget, updated provider methods
