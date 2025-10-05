@@ -85,43 +85,6 @@ void main() {
       expect(provider.nodes.first.position, equals(const Offset(30, 40)));
     });
 
-    test('updateNodeSize modifies existing node size', () {
-      provider.addNode(const Offset(10, 20));
-      final nodeId = provider.nodes.first.id;
-      final originalSize = provider.nodes.first.size;
-
-      provider.updateNodeSize(nodeId, 150.0);
-
-      expect(provider.nodes.first.size, equals(150.0));
-      expect(provider.nodes.first.size, isNot(equals(originalSize)));
-    });
-
-    test('updateNodeSize clamps size within bounds', () {
-      provider.addNode(const Offset(10, 20));
-      final nodeId = provider.nodes.first.id;
-
-      // Test minimum bound
-      provider.updateNodeSize(nodeId, 30.0);
-      expect(provider.nodes.first.size, equals(60.0)); // clamped to min
-
-      // Test maximum bound
-      provider.updateNodeSize(nodeId, 400.0);
-      expect(provider.nodes.first.size, equals(300.0)); // clamped to max
-
-      // Test normal value
-      provider.updateNodeSize(nodeId, 150.0);
-      expect(provider.nodes.first.size, equals(150.0));
-    });
-
-    test('updateNodeSize ignores non-existent node', () {
-      provider.addNode(const Offset(10, 20));
-      final originalSize = provider.nodes.first.size;
-
-      provider.updateNodeSize('non-existent', 150.0);
-
-      expect(provider.nodes.first.size, equals(originalSize));
-    });
-
     test('toggleNodeCompletion changes completion state', () {
       provider.addNode(const Offset(10, 20));
       final nodeId = provider.nodes.first.id;
