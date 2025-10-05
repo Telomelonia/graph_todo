@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/connection.dart';
@@ -20,8 +21,74 @@ class InteractiveConnectionWidget extends StatefulWidget {
   State<InteractiveConnectionWidget> createState() => _InteractiveConnectionWidgetState();
 }
 
-class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidget> {
+// ignore_for_file: unused_field
+class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidget>
+    with TickerProviderStateMixin {
   bool _isHovered = false;
+  bool _isHolding = false;
+  double _holdProgress = 0.0;
+  AnimationController? _holdAnimationController;
+  Animation<double>? _holdAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // Only initialize animation controller for mobile platforms
+    if (!_shouldUseInstantDelete) {
+      _holdAnimationController = AnimationController(
+        duration: const Duration(seconds: 2),
+        vsync: this,
+      );
+      _holdAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _holdAnimationController!, curve: Curves.linear),
+      );
+      _holdAnimation!.addListener(() {
+        setState(() {
+          _holdProgress = _holdAnimation!.value;
+        });
+      });
+      _holdAnimation!.addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          // Delete connection when animation completes
+          Provider.of<CanvasProvider>(context, listen: false)
+              .removeConnection(widget.connection.id);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _holdAnimationController?.dispose();
+    super.dispose();
+  }
+
+  void _startHolding() {
+    if (!_shouldUseInstantDelete) {
+      setState(() {
+        _isHolding = true;
+      });
+      _holdAnimationController?.forward();
+    }
+  }
+
+  void _stopHolding() {
+    if (!_shouldUseInstantDelete) {
+      setState(() {
+        _isHolding = false;
+        _holdProgress = 0.0;
+      });
+      _holdAnimationController?.reset();
+    }
+  }
+
+  bool get _shouldUseInstantDelete {
+    // Use instant delete for desktop platforms (macOS, Windows, Linux) and web
+    return kIsWeb || 
+           defaultTargetPlatform == TargetPlatform.macOS ||
+           defaultTargetPlatform == TargetPlatform.windows ||
+           defaultTargetPlatform == TargetPlatform.linux;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,44 +127,72 @@ class _InteractiveConnectionWidgetState extends State<InteractiveConnectionWidge
             onEnter: (_) => setState(() => _isHovered = true),
             onExit: (_) => setState(() => _isHovered = false),
             child: GestureDetector(
-              onTap: () {
-                // Delete the connection when clicked
+              onTap: _shouldUseInstantDelete ? () {
+                // Instant delete for desktop and web platforms
                 provider.removeConnection(widget.connection.id);
-              },
+              } : null,
+              onLongPressStart: !_shouldUseInstantDelete ? (_) => _startHolding() : null,
+              onLongPressEnd: !_shouldUseInstantDelete ? (_) => _stopHolding() : null,
+              onLongPressCancel: !_shouldUseInstantDelete ? () => _stopHolding() : null,
               child: Container(
                 width: hitboxSize,
                 height: hitboxSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _isHovered 
-                      ? Colors.red.withValues(alpha: 0.5)
-                      : Colors.transparent,
-                  border: _isHovered 
+                  color: (!_shouldUseInstantDelete && _isHolding)
+                      ? Colors.red.withValues(alpha: 0.3 + (_holdProgress * 0.4))
+                      : _isHovered 
+                          ? Colors.red.withValues(alpha: 0.5)
+                          : Colors.transparent,
+                  border: ((!_shouldUseInstantDelete && _isHolding) || _isHovered) 
                       ? Border.all(
-                          color: Colors.red.withValues(alpha: 0.9),
-                          width: 2.5,
+                          color: (!_shouldUseInstantDelete && _isHolding)
+                              ? Colors.red.withValues(alpha: 0.7 + (_holdProgress * 0.3))
+                              : Colors.red.withValues(alpha: 0.9),
+                          width: (!_shouldUseInstantDelete && _isHolding) ? 3.0 + (_holdProgress * 2.0) : 2.5,
                         )
                       : null,
                   // Add shadow for better visibility over nodes
-                  boxShadow: _isHovered ? [
+                  boxShadow: (_isHovered || (!_shouldUseInstantDelete && _isHolding)) ? [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 4.0,
+                      blurRadius: (!_shouldUseInstantDelete && _isHolding) ? 6.0 + (_holdProgress * 4.0) : 4.0,
                       offset: const Offset(0, 2),
                     ),
                   ] : null,
                 ),
-                child: _isHovered 
-                    ? Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: hitboxSize * 0.4,
+                child: (!_shouldUseInstantDelete && _isHolding)
+                    ? Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Progress indicator
+                          CircularProgressIndicator(
+                            value: _holdProgress,
+                            strokeWidth: 3.0,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white.withValues(alpha: 0.9),
+                            ),
+                            backgroundColor: Colors.white.withValues(alpha: 0.3),
+                          ),
+                          // Delete icon
+                          Icon(
+                            Icons.delete_forever,
+                            color: Colors.white,
+                            size: hitboxSize * 0.3,
+                          ),
+                        ],
                       )
-                    : SizedBox(
-                        // Invisible but clickable area when not hovered
-                        width: hitboxSize,
-                        height: hitboxSize,
-                      ),
+                    : _isHovered 
+                        ? Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: hitboxSize * 0.4,
+                          )
+                        : SizedBox(
+                            // Invisible but clickable area when not hovered
+                            width: hitboxSize,
+                            height: hitboxSize,
+                          ),
               ),
             ),
           ),
