@@ -19,7 +19,9 @@ class TodoNodeWidget extends StatefulWidget {
 class _TodoNodeWidgetState extends State<TodoNodeWidget>
     with TickerProviderStateMixin {
   late AnimationController _glowController;
+  late AnimationController _pulseController;
   late Animation<double> _glowAnimation;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
@@ -27,7 +29,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
     // Setup glow animation for completion
     _glowController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     _glowAnimation = Tween<double>(
@@ -38,9 +40,23 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       curve: Curves.easeInOut,
     ));
 
-    // Start glow animation if node is completed
+    // Setup pulsing animation for continuous glow effect
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(
+      begin: 0.6,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start animations if node is completed
     if (widget.node.isCompleted) {
       _glowController.forward();
+      _pulseController.repeat(reverse: true);
     }
 
     // Check if this is a newly created node that should open info panel
@@ -61,8 +77,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     if (widget.node.isCompleted != oldWidget.node.isCompleted) {
       if (widget.node.isCompleted) {
         _glowController.forward();
+        _pulseController.repeat(reverse: true);
       } else {
         _glowController.reverse();
+        _pulseController.stop();
+        _pulseController.reset();
       }
     }
   }
@@ -70,6 +89,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   @override
   void dispose() {
     _glowController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -159,19 +179,29 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                   context.read<CanvasProvider>().endDrag();
                 },
                 child: AnimatedBuilder(
-                  animation: _glowAnimation,
+                  animation: Listenable.merge([_glowAnimation, _pulseAnimation]),
                   builder: (context, child) {
                     return Container(
                       width: scaledSize,
                       height: scaledSize,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: widget.node.color.withValues(alpha: 0.9),
+                        color: widget.node.isCompleted 
+                          ? widget.node.color.withValues(alpha: 0.95)
+                          : widget.node.color.withValues(alpha: 0.9),
                         border: Border.all(
                           color: _getSelectionColor(),
                           width: _getSelectionWidth() * provider.scale,
                         ),
                         boxShadow: _buildShadows(provider.scale),
+                        gradient: widget.node.isCompleted ? RadialGradient(
+                          colors: [
+                            widget.node.color.withValues(alpha: 1.0),
+                            widget.node.color.withValues(alpha: 0.7),
+                            widget.node.color.withValues(alpha: 0.9),
+                          ],
+                          stops: const [0.0, 0.7, 1.0],
+                        ) : null,
                       ),
                       child: _buildContent(provider.scale),
                     );
@@ -225,13 +255,44 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       ),
     ];
 
-    // Add glow effect when completed
+    // Add dramatic glow effects when completed
     if (widget.node.isCompleted) {
+      final pulseValue = _pulseAnimation.value;
+      final glowValue = _glowAnimation.value;
+      
+      // Inner bright glow
       shadows.add(
         BoxShadow(
-          color: Colors.green.withValues(alpha: 0.6 * _glowAnimation.value),
-          blurRadius: 20.0 * _glowAnimation.value,
-          spreadRadius: 5.0 * _glowAnimation.value,
+          color: Colors.greenAccent.withValues(alpha: 0.8 * glowValue * pulseValue),
+          blurRadius: 15.0 * scale * glowValue,
+          spreadRadius: 3.0 * scale * glowValue,
+        ),
+      );
+      
+      // Middle glow layer
+      shadows.add(
+        BoxShadow(
+          color: Colors.green.withValues(alpha: 0.6 * glowValue * pulseValue),
+          blurRadius: 30.0 * scale * glowValue * pulseValue,
+          spreadRadius: 8.0 * scale * glowValue,
+        ),
+      );
+      
+      // Outer dramatic glow
+      shadows.add(
+        BoxShadow(
+          color: Colors.lightGreen.withValues(alpha: 0.4 * glowValue * pulseValue),
+          blurRadius: 50.0 * scale * glowValue * pulseValue,
+          spreadRadius: 15.0 * scale * glowValue * pulseValue,
+        ),
+      );
+      
+      // Subtle white highlight for sparkle effect
+      shadows.add(
+        BoxShadow(
+          color: Colors.white.withValues(alpha: 0.3 * glowValue * pulseValue),
+          blurRadius: 8.0 * scale * glowValue,
+          spreadRadius: 1.0 * scale * glowValue,
         ),
       );
     }
@@ -244,15 +305,38 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       children: [
         // Main icon display
         Center(
-          child: Text(
-            widget.node.icon,
-            style: TextStyle(
-              fontSize: 48 * scale.clamp(0.5, 1.2),
-              decoration: widget.node.isCompleted
-                  ? TextDecoration.lineThrough
-                  : null,
-            ),
-          ),
+          child: widget.node.isCompleted
+            ? AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: 1.0 + (0.1 * _pulseAnimation.value * _glowAnimation.value),
+                    child: Text(
+                      widget.node.icon,
+                      style: TextStyle(
+                        fontSize: 48 * scale.clamp(0.5, 1.2),
+                        decoration: TextDecoration.lineThrough,
+                        shadows: [
+                          Shadow(
+                            color: Colors.white.withValues(alpha: 0.5 * _pulseAnimation.value),
+                            blurRadius: 8.0 * _pulseAnimation.value,
+                          ),
+                          Shadow(
+                            color: Colors.greenAccent.withValues(alpha: 0.3 * _pulseAnimation.value),
+                            blurRadius: 12.0 * _pulseAnimation.value,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              )
+            : Text(
+                widget.node.icon,
+                style: TextStyle(
+                  fontSize: 48 * scale.clamp(0.5, 1.2),
+                ),
+              ),
         ),
         // Checkmark overlay for completed tasks
         if (widget.node.isCompleted)
