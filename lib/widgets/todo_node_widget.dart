@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import '../models/todo_node.dart';
 import '../providers/canvas_provider.dart';
+import 'resize_handles_widget.dart';
 
 class TodoNodeWidget extends StatefulWidget {
   final TodoNode node;
@@ -160,6 +161,33 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     });
   }
 
+  void _handleResizeStart() {
+    // Optional: Add visual feedback for resize start
+  }
+
+  void _handleResizeDrag(DragUpdateDetails details, bool isTopRightHandle) {
+    final provider = context.read<CanvasProvider>();
+    
+    // Calculate size change based on drag distance
+    // For diagonal resize, we use the larger of dx or dy for consistent behavior
+    final dragDistance = isTopRightHandle 
+        ? details.delta.dx.abs() > details.delta.dy.abs() ? details.delta.dx : -details.delta.dy
+        : details.delta.dx.abs() > details.delta.dy.abs() ? -details.delta.dx : details.delta.dy;
+    
+    // Convert screen drag to canvas coordinates with appropriate sensitivity
+    final scaledDragDistance = dragDistance / provider.scale;
+    
+    // Calculate new size (multiply by 2 since we're changing radius)
+    final currentSize = widget.node.size;
+    final newSize = currentSize + (scaledDragDistance * 2);
+    
+    provider.updateNodeSize(widget.node.id, newSize);
+  }
+
+  void _handleResizeEnd() {
+    // Optional: Add visual feedback for resize end
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<CanvasProvider>(
@@ -218,6 +246,22 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
             // Action buttons (separate from node gesture detector)
             if (provider.nodeWithActiveButtons == widget.node.id && !_isEditing)
               ..._buildActionButtons(screenPosition.dx, screenPosition.dy, scaledSize, provider.scale),
+            // Resize handles (shown when action buttons are active)
+            if (provider.nodeWithActiveButtons == widget.node.id && !_isEditing)
+              Positioned(
+                left: screenPosition.dx - scaledSize / 2,
+                top: screenPosition.dy - scaledSize / 2,
+                child: ResizeHandlesWidget(
+                  nodeSize: scaledSize,
+                  scale: provider.scale,
+                  onTopRightDragStart: (details) => _handleResizeStart(),
+                  onTopRightDrag: (details) => _handleResizeDrag(details, true),
+                  onTopRightDragEnd: (details) => _handleResizeEnd(),
+                  onBottomLeftDragStart: (details) => _handleResizeStart(),
+                  onBottomLeftDrag: (details) => _handleResizeDrag(details, false),
+                  onBottomLeftDragEnd: (details) => _handleResizeEnd(),
+                ),
+              ),
           ],
         );
       },

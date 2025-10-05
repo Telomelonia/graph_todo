@@ -129,6 +129,17 @@ class CanvasProvider with ChangeNotifier {
     }
   }
 
+  // Update node size
+  void updateNodeSize(String nodeId, double newSize) {
+    final index = _nodes.indexWhere((node) => node.id == nodeId);
+    if (index != -1) {
+      // Clamp size to reasonable bounds
+      final clampedSize = newSize.clamp(60.0, 300.0);
+      _nodes[index] = _nodes[index].copyWith(size: clampedSize);
+      notifyListeners();
+    }
+  }
+
   // Toggle node completion
   void toggleNodeCompletion(String nodeId) {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
