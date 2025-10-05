@@ -165,15 +165,15 @@ void main() {
       await tester.pumpWidget(createTestWidget(testNode));
       
       expect(find.byType(TodoNodeWidget), findsOneWidget);
-      expect(find.text('Test Task'), findsOneWidget);
+      expect(find.text('🎯'), findsOneWidget); // Look for the default icon instead of text
     });
 
     testWidgets('enters edit mode on double tap (simplified)', (WidgetTester tester) async {
       await tester.pumpWidget(createTestWidget(testNode));
 
-      // Verify initially not in edit mode
+      // Verify initially not in edit mode (no text editing since we show icons)
       expect(find.byType(TextField), findsNothing);
-      expect(find.text('Test Task'), findsOneWidget);
+      expect(find.text('🎯'), findsOneWidget); // Look for the default icon instead of text
     });
 
     testWidgets('shows connect mode UI when enabled', (WidgetTester tester) async {

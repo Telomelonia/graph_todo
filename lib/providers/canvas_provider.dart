@@ -469,6 +469,15 @@ class CanvasProvider with ChangeNotifier {
     }
   }
 
+  // Update node icon
+  void updateNodeIcon(String nodeId, String newIcon) {
+    final index = _nodes.indexWhere((node) => node.id == nodeId);
+    if (index != -1) {
+      _nodes[index] = _nodes[index].copyWith(icon: newIcon);
+      notifyListeners();
+    }
+  }
+
   // Active buttons management
   void showNodeActionButtons(String nodeId) {
     _nodeWithActiveButtons = nodeId;

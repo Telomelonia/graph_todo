@@ -20,13 +20,10 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     with TickerProviderStateMixin {
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
-  final TextEditingController _textController = TextEditingController();
-  bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
-    _textController.text = widget.node.text;
 
     // Setup glow animation for completion
     _glowController = AnimationController(
@@ -46,13 +43,12 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       _glowController.forward();
     }
 
-    // Check if this is a newly created node that should start in editing mode
+    // Check if this is a newly created node that should open info panel
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<CanvasProvider>();
       if (provider.newlyCreatedNodeId == widget.node.id) {
-        setState(() {
-          _isEditing = true;
-        });
+        provider.showNodeInfo(widget.node.id);
+        provider.clearNewlyCreatedFlag();
       }
     });
   }
@@ -60,11 +56,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   @override
   void didUpdateWidget(TodoNodeWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    // Update text controller if node text changed externally
-    if (widget.node.text != oldWidget.node.text) {
-      _textController.text = widget.node.text;
-    }
 
     // Handle completion animation
     if (widget.node.isCompleted != oldWidget.node.isCompleted) {
@@ -79,7 +70,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   @override
   void dispose() {
     _glowController.dispose();
-    _textController.dispose();
     super.dispose();
   }
 
@@ -128,37 +118,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   void _handleDoubleTap() {
     final provider = context.read<CanvasProvider>();
     if (!provider.isConnectMode && !provider.isEraserMode && !provider.isInfoPanelOpen) {
-      // Get screen size for zoom calculation
-      final mediaQuery = MediaQuery.maybeOf(context);
-      if (mediaQuery != null) {
-        final screenSize = mediaQuery.size;
-        // Zoom to node with consistent 14% screen size ratio
-        provider.zoomToNodeForEditing(widget.node.id, screenSize);
-      }
-      
-      setState(() {
-        _isEditing = true;
-      });
+      // Open info panel for editing
+      provider.showNodeInfo(widget.node.id);
     }
   }
 
-  void _handleEditingComplete() {
-    final provider = context.read<CanvasProvider>();
-
-    // If the text is empty, set a default text
-    final finalText = _textController.text.trim().isEmpty ? 'New Task' : _textController.text;
-
-    provider.updateNodeText(widget.node.id, finalText);
-
-    // Clear the newly created flag if this was a newly created node
-    if (provider.newlyCreatedNodeId == widget.node.id) {
-      provider.clearNewlyCreatedFlag();
-    }
-
-    setState(() {
-      _isEditing = false;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +180,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
               ),
             ),
             // Action buttons (separate from node gesture detector)
-            if (provider.nodeWithActiveButtons == widget.node.id && !_isEditing)
+            if (provider.nodeWithActiveButtons == widget.node.id)
               ..._buildActionButtons(screenPosition.dx, screenPosition.dy, scaledSize, provider.scale),
           ],
         );
@@ -276,73 +240,44 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   }
 
   Widget _buildContent(double scale) {
-    if (_isEditing) {
-      return Center(
-        child: TextField(
-          controller: _textController,
-          autofocus: true,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+    return Stack(
+      children: [
+        // Main icon display
+        Center(
+          child: Text(
+            widget.node.icon,
+            style: TextStyle(
+              fontSize: 48 * scale.clamp(0.5, 1.2),
+              decoration: widget.node.isCompleted
+                  ? TextDecoration.lineThrough
+                  : null,
+            ),
           ),
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            contentPadding: EdgeInsets.all(8),
-          ),
-          onSubmitted: (value) => _handleEditingComplete(),
-          onTapOutside: (event) => _handleEditingComplete(),
-          maxLines: null,
         ),
-      );
-    } else {
-      return Stack(
-        children: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                widget.node.text,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  decoration: widget.node.isCompleted
-                      ? TextDecoration.lineThrough
-                      : null,
+        // Checkmark overlay for completed tasks
+        if (widget.node.isCompleted)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: FadeTransition(
+              opacity: _glowAnimation,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: 14,
+                ),
               ),
             ),
           ),
-          // Checkmark overlay for completed tasks
-          if (widget.node.isCompleted)
-            Positioned(
-              right: 4,
-              top: 4,
-              child: FadeTransition(
-                opacity: _glowAnimation,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      );
-    }
+      ],
+    );
   }
 
   List<Widget> _buildActionButtons(double centerX, double centerY, double scaledSize, double scale) {

@@ -4,6 +4,7 @@ class TodoNode {
   final String id;
   String text;
   String description;
+  String icon;
   Offset position;
   bool isCompleted;
   Color color;
@@ -13,6 +14,7 @@ class TodoNode {
     required this.id,
     required this.text,
     this.description = '',
+    this.icon = '🎯', // Default target icon
     required this.position,
     this.isCompleted = false,
     this.color = const Color(0xFF6366F1), // Default indigo color
@@ -25,6 +27,7 @@ class TodoNode {
       'id': id,
       'text': text,
       'description': description,
+      'icon': icon,
       'position': {'dx': position.dx, 'dy': position.dy},
       'isCompleted': isCompleted,
       'color': color.toARGB32(),
@@ -38,6 +41,7 @@ class TodoNode {
       id: json['id'],
       text: json['text'],
       description: json['description'] ?? '',
+      icon: json['icon'] ?? '🎯',
       position: Offset(json['position']['dx'], json['position']['dy']),
       isCompleted: json['isCompleted'] ?? false,
       color: Color(json['color'] ?? 0xFF6366F1),
@@ -49,6 +53,7 @@ class TodoNode {
   TodoNode copyWith({
     String? text,
     String? description,
+    String? icon,
     Offset? position,
     bool? isCompleted,
     Color? color,
@@ -58,6 +63,7 @@ class TodoNode {
       id: id,
       text: text ?? this.text,
       description: description ?? this.description,
+      icon: icon ?? this.icon,
       position: position ?? this.position,
       isCompleted: isCompleted ?? this.isCompleted,
       color: color ?? this.color,

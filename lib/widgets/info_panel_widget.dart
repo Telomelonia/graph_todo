@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/todo_node.dart';
 import '../providers/canvas_provider.dart';
+import 'icon_selector_widget.dart';
 
 class InfoPanelWidget extends StatefulWidget {
   final TodoNode node;
@@ -16,8 +17,10 @@ class InfoPanelWidget extends StatefulWidget {
 }
 
 class _InfoPanelWidgetState extends State<InfoPanelWidget> {
+  late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late Color _selectedColor;
+  late String _selectedIcon;
 
   // Predefined color options
   final List<Color> _colorOptions = [
@@ -36,12 +39,15 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
   @override
   void initState() {
     super.initState();
+    _titleController = TextEditingController(text: widget.node.text);
     _descriptionController = TextEditingController(text: widget.node.description);
     _selectedColor = widget.node.color;
+    _selectedIcon = widget.node.icon;
   }
 
   @override
   void dispose() {
+    _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -49,9 +55,19 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
   void _saveChanges() {
     final provider = context.read<CanvasProvider>();
     
+    // Update title if changed
+    if (_titleController.text != widget.node.text) {
+      provider.updateNodeText(widget.node.id, _titleController.text.trim().isEmpty ? 'New Task' : _titleController.text);
+    }
+    
     // Update description if changed
     if (_descriptionController.text != widget.node.description) {
       provider.updateNodeDescription(widget.node.id, _descriptionController.text);
+    }
+    
+    // Update icon if changed
+    if (_selectedIcon != widget.node.icon) {
+      provider.updateNodeIcon(widget.node.id, _selectedIcon);
     }
     
     // Update color if changed
@@ -61,6 +77,27 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
     
     // Close the panel
     provider.hideNodeInfo();
+  }
+
+  void _showIconSelector() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF2D2D2D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: IconSelectorWidget(
+          currentIcon: _selectedIcon,
+          onIconSelected: (icon) {
+            setState(() {
+              _selectedIcon = icon;
+            });
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -180,12 +217,91 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Title field
+                      Text(
+                        'Title:',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: _titleController,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Enter task title...',
+                          hintStyle: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 14,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Colors.blue, width: 2),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          filled: true,
+                          fillColor: Colors.black.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Icon selector
+                      Row(
+                        children: [
+                          Text(
+                            'Icon:',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _showIconSelector(),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _selectedIcon,
+                                    style: const TextStyle(fontSize: 20),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.edit,
+                                    size: 16,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
                       // Description field
                       Text(
                         'Description:',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
