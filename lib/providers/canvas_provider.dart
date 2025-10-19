@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/todo_node.dart';
 import '../models/connection.dart';
+import '../services/data_service.dart';
 
 class CanvasProvider with ChangeNotifier {
   final List<TodoNode> _nodes = [];
@@ -496,6 +497,76 @@ class CanvasProvider with ChangeNotifier {
     } else {
       _nodeWithActiveButtons = nodeId;
     }
+    notifyListeners();
+  }
+
+  // Export canvas data to file
+  Future<String?> exportData() async {
+    final canvasState = {
+      'panOffset': {'dx': _panOffset.dx, 'dy': _panOffset.dy},
+      'scale': _scale,
+    };
+
+    return await DataService.exportData(
+      nodes: _nodes,
+      connections: _connections,
+      canvasState: canvasState,
+    );
+  }
+
+  // Import canvas data from file
+  Future<ImportResult> importData() async {
+    return await DataService.importData();
+  }
+
+  // Load imported data into the canvas
+  void loadImportedData(ImportResult result) {
+    if (!result.success || result.nodes == null || result.connections == null) {
+      return;
+    }
+
+    // Validate connections reference existing nodes
+    if (!DataService.validateConnections(result.nodes!, result.connections!)) {
+      throw Exception('Invalid data: connections reference non-existent nodes');
+    }
+
+    // Clear current data
+    _nodes.clear();
+    _connections.clear();
+
+    // Load new data
+    _nodes.addAll(result.nodes!);
+    _connections.addAll(result.connections!);
+
+    // Load canvas state if available
+    if (result.canvasState != null) {
+      final panData = result.canvasState!['panOffset'] as Map<String, dynamic>?;
+      if (panData != null) {
+        _panOffset = Offset(
+          (panData['dx'] as num?)?.toDouble() ?? 0.0,
+          (panData['dy'] as num?)?.toDouble() ?? 0.0,
+        );
+      }
+
+      final scaleData = result.canvasState!['scale'] as num?;
+      if (scaleData != null) {
+        _scale = scaleData.toDouble().clamp(0.1, 5.0);
+      }
+    }
+
+    // Reset UI state
+    _isConnectMode = false;
+    _isAddNodeMode = false;
+    _isEraserMode = false;
+    _selectedNodeForConnection = null;
+    _draggedNode = null;
+    _newlyCreatedNodeId = null;
+    _nodeShowingInfo = null;
+    _nodeWithActiveButtons = null;
+
+    // Update connection states based on current node completion
+    _updateConnectionStates();
+
     notifyListeners();
   }
 }

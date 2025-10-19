@@ -46,12 +46,38 @@ class HomePage extends StatelessWidget {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Import button
+              FloatingActionButton(
+                heroTag: "import",
+                onPressed: () => _handleImport(context, provider),
+                backgroundColor: Colors.blue,
+                tooltip: 'Import Data',
+                child: const Icon(
+                  Icons.upload_file,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Export button
+              FloatingActionButton(
+                heroTag: "export",
+                onPressed: () => _handleExport(context, provider),
+                backgroundColor: Colors.orange,
+                tooltip: 'Export Data',
+                child: const Icon(
+                  Icons.download,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Add node button
               FloatingActionButton(
                 heroTag: "addNode",
                 onPressed: provider.toggleAddNodeMode,
                 backgroundColor: provider.isAddNodeMode
                     ? Colors.grey
                     : Colors.green,
+                tooltip: provider.isAddNodeMode ? 'Cancel' : 'Add Node',
                 child: Icon(
                   provider.isAddNodeMode
                       ? Icons.close
@@ -60,6 +86,7 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
+              // Clear canvas button
               FloatingActionButton(
                 heroTag: "clear",
                 onPressed: () {
@@ -85,6 +112,7 @@ class HomePage extends StatelessWidget {
                   );
                 },
                 backgroundColor: Colors.red,
+                tooltip: 'Clear Canvas',
                 child: const Icon(
                   Icons.clear_all,
                   color: Colors.white,
@@ -95,6 +123,132 @@ class HomePage extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _handleExport(BuildContext context, CanvasProvider provider) async {
+    if (provider.nodes.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No data to export. Create some nodes first!'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final result = await provider.exportData();
+      if (!context.mounted) return;
+      
+      if (result != null) {
+        if (result == 'cancelled') {
+          // User cancelled the save dialog - no need to show message
+          return;
+        } else if (kIsWeb) {
+          // For web, show simpler message since download happens immediately
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data exported successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          // Show the file path where it was saved
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Data exported successfully!\nSaved to: $result'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to export data'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleImport(BuildContext context, CanvasProvider provider) async {
+    // Show confirmation dialog if there's existing data
+    if (provider.nodes.isNotEmpty) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Import Data'),
+          content: const Text(
+            'This will replace all current data. Are you sure you want to continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Import'),
+            ),
+          ],
+        ),
+      );
+      
+      if (confirmed != true) return;
+    }
+
+    try {
+      final result = await provider.importData();
+      if (!context.mounted) return;
+      
+      if (result.cancelled) {
+        return; // User cancelled, no message needed
+      }
+      
+      if (result.success) {
+        provider.loadImportedData(result);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Data imported successfully!\n'
+              '${result.nodes?.length ?? 0} nodes, ${result.connections?.length ?? 0} connections',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Import failed: ${result.error}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Import error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 
