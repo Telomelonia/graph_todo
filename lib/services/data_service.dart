@@ -34,18 +34,23 @@ class DataService {
       } else {
         // For mobile/desktop, let user choose the save location
         final fileName = 'graphtodo_export_${DateTime.now().millisecondsSinceEpoch}.$_fileExtension';
+        final bytes = Uint8List.fromList(utf8.encode(jsonString));
         
         String? outputFile = await FilePicker.platform.saveFile(
           dialogTitle: 'Save GraphTodo Export',
           fileName: fileName,
           type: FileType.custom,
           allowedExtensions: [_fileExtension],
+          bytes: bytes,
         );
 
         if (outputFile != null) {
-          final file = File(outputFile);
-          await file.writeAsString(jsonString);
-          return file.path;
+          // On desktop platforms, we still need to write the file manually
+          if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+            final file = File(outputFile);
+            await file.writeAsString(jsonString);
+          }
+          return outputFile;
         } else {
           // User cancelled the save dialog
           return 'cancelled';
@@ -61,25 +66,37 @@ class DataService {
   static Future<ImportResult> importData() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: [_fileExtension, 'json'],
+        type: FileType.any,
         allowMultiple: false,
+        dialogTitle: 'Select GraphTodo Export File',
+        withData: true,
       );
 
-      if (result != null && result.files.single.path != null) {
+      if (result != null && result.files.isNotEmpty) {
         String jsonString;
+        final pickedFile = result.files.single;
         
-        if (kIsWeb) {
-          // For web, read from bytes
-          final bytes = result.files.single.bytes;
+        // Validate file extension if we have a name
+        if (pickedFile.name.isNotEmpty) {
+          final fileName = pickedFile.name.toLowerCase();
+          if (!fileName.endsWith('.$_fileExtension') && !fileName.endsWith('.json')) {
+            return ImportResult.error('Please select a .graphtodo or .json file');
+          }
+        }
+        
+        if (kIsWeb || pickedFile.bytes != null) {
+          // For web or when bytes are available, read from bytes
+          final bytes = pickedFile.bytes;
           if (bytes == null) {
-            return ImportResult.error('Failed to read file');
+            return ImportResult.error('Failed to read file data');
           }
           jsonString = utf8.decode(bytes);
-        } else {
-          // For mobile/desktop, read from file path
-          final file = File(result.files.single.path!);
+        } else if (pickedFile.path != null) {
+          // For mobile/desktop with file path, read from file
+          final file = File(pickedFile.path!);
           jsonString = await file.readAsString();
+        } else {
+          return ImportResult.error('Unable to access file data');
         }
 
         return _parseImportData(jsonString);
