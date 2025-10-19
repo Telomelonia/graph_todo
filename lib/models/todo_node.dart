@@ -14,7 +14,7 @@ class TodoNode {
     required this.id,
     required this.text,
     this.description = '',
-    this.icon = '🎯', // Default target icon
+    this.icon = 'target', // Default target icon
     required this.position,
     this.isCompleted = false,
     this.color = const Color(0xFF6366F1), // Default indigo color
@@ -41,7 +41,7 @@ class TodoNode {
       id: json['id'],
       text: json['text'],
       description: json['description'] ?? '',
-      icon: json['icon'] ?? '🎯',
+      icon: json['icon'] ?? 'target',
       position: Offset(json['position']['dx'], json['position']['dy']),
       isCompleted: json['isCompleted'] ?? false,
       color: Color(json['color'] ?? 0xFF6366F1),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../models/todo_node.dart';
 import '../providers/canvas_provider.dart';
 import 'icon_selector_widget.dart';
@@ -50,6 +51,186 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  // Helper function to get PhosphorIcon from string name
+  IconData _getPhosphorIcon(String iconName) {
+    switch (iconName) {
+      // Tasks & Goals
+      case 'target': return PhosphorIcons.target();
+      case 'check-circle': return PhosphorIcons.checkCircle();
+      case 'flag': return PhosphorIcons.flag();
+      case 'trophy': return PhosphorIcons.trophy();
+      case 'medal': return PhosphorIcons.medal();
+      case 'star': return PhosphorIcons.star();
+      case 'check': return PhosphorIcons.check();
+      case 'x': return PhosphorIcons.x();
+      case 'clock': return PhosphorIcons.clock();
+      case 'calendar': return PhosphorIcons.calendar();
+      case 'bookmark': return PhosphorIcons.bookmark();
+      case 'list': return PhosphorIcons.list();
+      case 'note': return PhosphorIcons.note();
+      case 'plus': return PhosphorIcons.plus();
+      case 'minus': return PhosphorIcons.minus();
+      
+      // Business
+      case 'briefcase': return PhosphorIcons.briefcase();
+      case 'bank': return PhosphorIcons.bank();
+      case 'chart-line': return PhosphorIcons.chartLine();
+      case 'chart-bar': return PhosphorIcons.chartBar();
+      case 'money': return PhosphorIcons.money();
+      case 'diamond': return PhosphorIcons.diamond();
+      case 'currency-dollar': return PhosphorIcons.currencyDollar();
+      case 'currency-euro': return PhosphorIcons.currencyEur();
+      case 'credit-card': return PhosphorIcons.creditCard();
+      case 'calculator': return PhosphorIcons.calculator();
+      case 'presentation-chart': return PhosphorIcons.presentationChart();
+      case 'handshake': return PhosphorIcons.handshake();
+      case 'building': return PhosphorIcons.building();
+      case 'office-chair': return PhosphorIcons.officeChair();
+      case 'receipt': return PhosphorIcons.receipt();
+      case 'vault': return PhosphorIcons.vault();
+      case 'coin': return PhosphorIcons.coin();
+      case 'piggy-bank': return PhosphorIcons.piggyBank();
+      
+      // Technology
+      case 'laptop': return PhosphorIcons.laptop();
+      case 'monitor': return PhosphorIcons.monitor();
+      case 'device-mobile': return PhosphorIcons.deviceMobile();
+      case 'code': return PhosphorIcons.code();
+      case 'terminal': return PhosphorIcons.terminal();
+      case 'gear': return PhosphorIcons.gear();
+      case 'database': return PhosphorIcons.database();
+      case 'cloud': return PhosphorIcons.cloud();
+      case 'wifi': return PhosphorIcons.wifiHigh();
+      case 'bluetooth': return PhosphorIcons.bluetoothConnected();
+      case 'usb': return PhosphorIcons.usb();
+      case 'hard-drive': return PhosphorIcons.hardDrive();
+      case 'cpu': return PhosphorIcons.cpu();
+      case 'memory': return PhosphorIcons.memory();
+      case 'circuit-board': return PhosphorIcons.gear();
+      case 'network': return PhosphorIcons.network();
+      case 'browser': return PhosphorIcons.browser();
+      case 'bug': return PhosphorIcons.bug();
+      case 'git-branch': return PhosphorIcons.gitBranch();
+      case 'github-logo': return PhosphorIcons.githubLogo();
+      
+      // Health & Fitness
+      case 'heart': return PhosphorIcons.heart();
+      case 'pulse': return PhosphorIcons.pulse();
+      case 'bicycle': return PhosphorIcons.bicycle();
+      case 'barbell': return PhosphorIcons.barbell();
+      case 'person-simple-run': return PhosphorIcons.personSimpleRun();
+      case 'apple-logo': return PhosphorIcons.appleLogo();
+      case 'person-simple-walk': return PhosphorIcons.personSimpleWalk();
+      case 'person-simple-swim': return PhosphorIcons.personSimpleSwim();
+      case 'person-simple-bike': return PhosphorIcons.personSimpleBike();
+      case 'person': return PhosphorIcons.person();
+      case 'basketball': return PhosphorIcons.basketball();
+      case 'soccer-ball': return PhosphorIcons.soccerBall();
+      case 'tennis-ball': return PhosphorIcons.basketball();
+      case 'pill': return PhosphorIcons.pill();
+      case 'first-aid': return PhosphorIcons.firstAid();
+      case 'thermometer': return PhosphorIcons.thermometer();
+      case 'tooth': return PhosphorIcons.tooth();
+      
+      // Knowledge & Learning
+      case 'book': return PhosphorIcons.book();
+      case 'books': return PhosphorIcons.books();
+      case 'brain': return PhosphorIcons.brain();
+      case 'lightbulb': return PhosphorIcons.lightbulb();
+      case 'graduation-cap': return PhosphorIcons.graduationCap();
+      case 'microscope': return PhosphorIcons.microscope();
+      case 'student': return PhosphorIcons.student();
+      case 'teacher': return PhosphorIcons.chalkboardTeacher();
+      case 'chalkboard': return PhosphorIcons.chalkboard();
+      case 'test-tube': return PhosphorIcons.testTube();
+      case 'atom': return PhosphorIcons.atom();
+      case 'dna': return PhosphorIcons.dna();
+      case 'flask': return PhosphorIcons.flask();
+      case 'math-operations': return PhosphorIcons.mathOperations();
+      case 'translate': return PhosphorIcons.translate();
+      case 'certificate': return PhosphorIcons.certificate();
+      case 'exam': return PhosphorIcons.exam();
+      case 'pencil': return PhosphorIcons.pencil();
+      
+      // Creative & Arts
+      case 'palette': return PhosphorIcons.palette();
+      case 'paint-brush': return PhosphorIcons.paintBrush();
+      case 'camera': return PhosphorIcons.camera();
+      case 'music-note': return PhosphorIcons.musicNote();
+      case 'film-strip': return PhosphorIcons.filmStrip();
+      case 'pen': return PhosphorIcons.pen();
+      case 'microphone': return PhosphorIcons.microphone();
+      case 'guitar': return PhosphorIcons.guitar();
+      case 'piano-keys': return PhosphorIcons.pianoKeys();
+      case 'headphones': return PhosphorIcons.headphones();
+      case 'speaker-high': return PhosphorIcons.speakerHigh();
+      case 'vinyl-record': return PhosphorIcons.vinylRecord();
+      case 'video-camera': return PhosphorIcons.videoCamera();
+      case 'image': return PhosphorIcons.image();
+      case 'sketch-logo': return PhosphorIcons.sketchLogo();
+      case 'design-system': return PhosphorIcons.selection();
+      case 'color-palette': return PhosphorIcons.palette();
+      case 'scissors': return PhosphorIcons.scissors();
+      
+      // Communication & Social
+      case 'chat-circle': return PhosphorIcons.chatCircle();
+      case 'envelope': return PhosphorIcons.envelope();
+      case 'phone': return PhosphorIcons.phone();
+      case 'users': return PhosphorIcons.users();
+      case 'share': return PhosphorIcons.share();
+      case 'megaphone': return PhosphorIcons.megaphone();
+      case 'video': return PhosphorIcons.videoCamera();
+      case 'chat-text': return PhosphorIcons.chatText();
+      case 'at': return PhosphorIcons.at();
+      case 'hash': return PhosphorIcons.hash();
+      case 'thumbs-up': return PhosphorIcons.thumbsUp();
+      case 'thumbs-down': return PhosphorIcons.thumbsDown();
+      case 'user-circle': return PhosphorIcons.userCircle();
+      case 'crown': return PhosphorIcons.crown();
+      case 'smiley': return PhosphorIcons.smiley();
+      
+      // Travel & Adventure
+      case 'airplane': return PhosphorIcons.airplane();
+      case 'map-pin': return PhosphorIcons.mapPin();
+      case 'compass': return PhosphorIcons.compass();
+      case 'globe': return PhosphorIcons.globe();
+      case 'suitcase': return PhosphorIcons.suitcase();
+      case 'train': return PhosphorIcons.train();
+      case 'bus': return PhosphorIcons.bus();
+      case 'taxi': return PhosphorIcons.taxi();
+      case 'ship': return PhosphorIcons.boat();
+      case 'anchor': return PhosphorIcons.anchor();
+      case 'passport': return PhosphorIcons.identificationCard();
+      case 'ticket': return PhosphorIcons.ticket();
+      case 'mountains': return PhosphorIcons.mountains();
+      case 'tent': return PhosphorIcons.tent();
+      case 'campfire': return PhosphorIcons.campfire();
+      case 'binoculars': return PhosphorIcons.binoculars();
+      case 'backpack': return PhosphorIcons.backpack();
+      case 'road-horizon': return PhosphorIcons.roadHorizon();
+      
+      // Home & Life
+      case 'house': return PhosphorIcons.house();
+      case 'bed': return PhosphorIcons.bed();
+      case 'shower': return PhosphorIcons.shower();
+      case 'car': return PhosphorIcons.car();
+      case 'key': return PhosphorIcons.key();
+      case 'lock': return PhosphorIcons.lock();
+      case 'door': return PhosphorIcons.door();
+      case 'armchair': return PhosphorIcons.armchair();
+      case 'television': return PhosphorIcons.television();
+      case 'washing-machine': return PhosphorIcons.washingMachine();
+      case 'oven': return PhosphorIcons.oven();
+      case 'broom': return PhosphorIcons.broom();
+      case 'toilet-paper': return PhosphorIcons.toiletPaper();
+      case 'bathtub': return PhosphorIcons.bathtub();
+      case 'garage': return PhosphorIcons.garage();
+      case 'garden': return PhosphorIcons.flower();
+      
+      default: return PhosphorIcons.target(); // Default fallback
+    }
   }
 
   void _saveChanges() {
@@ -278,9 +459,10 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    _selectedIcon,
-                                    style: const TextStyle(fontSize: 20),
+                                  Icon(
+                                    _getPhosphorIcon(_selectedIcon),
+                                    size: 20,
+                                    color: Colors.white,
                                   ),
                                   const SizedBox(width: 4),
                                   Icon(
