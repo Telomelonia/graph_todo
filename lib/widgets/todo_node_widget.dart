@@ -673,6 +673,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   }
 
   Widget _buildContent(double scale) {
+    // Calculate icon size as a fixed proportion of scaled node size (40% of node diameter)
+    // Icon scales with zoom just like the node does, maintaining consistent proportion
+    final scaledSize = widget.node.size * scale;
+    final iconSize = scaledSize * 0.4;
+
     return Stack(
       children: [
         // Main icon display
@@ -694,7 +699,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                       },
                       child: Icon(
                         _getPhosphorIcon(widget.node.icon),
-                        size: 48 * scale.clamp(0.5, 1.2),
+                        size: iconSize,
                         color: Colors.white,
                         shadows: [
                           Shadow(
@@ -713,7 +718,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
               )
             : Icon(
                 _getPhosphorIcon(widget.node.icon),
-                size: 48 * scale.clamp(0.5, 1.2),
+                size: iconSize,
                 color: Colors.white,
               ),
         ),
