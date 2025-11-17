@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../models/todo_node.dart';
 import '../providers/canvas_provider.dart';
+import '../theme/app_theme.dart';
 
 class TodoNodeWidget extends StatefulWidget {
   final TodoNode node;
@@ -128,6 +129,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       _longPressGlowController.reverse();
     }
   }
+
+  // Charcoal color for icons - removed, now using AppTheme
 
   // Helper function to get PhosphorIcon from string name
   IconData _getPhosphorIcon(String iconName) {
@@ -412,12 +415,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     provider.hideNodeActionButtons();
   }
 
-  void _handleConnectorTap() {
-    final provider = context.read<CanvasProvider>();
-    provider.startConnectionFromNode(widget.node.id);
-    provider.hideNodeActionButtons();
-  }
-
   void _handleDeleteTap() {
     final provider = context.read<CanvasProvider>();
     provider.removeNode(widget.node.id);
@@ -471,25 +468,29 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                 child: AnimatedBuilder(
                   animation: Listenable.merge([_glowAnimation, _pulseAnimation, _longPressGlowAnimation]),
                   builder: (context, child) {
+                    final bgColor = AppTheme.getNodeBackgroundColor(
+                      widget.node.color,
+                      provider.isDarkMode,
+                      isCompleted: widget.node.isCompleted,
+                    );
+
                     return Container(
                       width: scaledSize,
                       height: scaledSize,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: widget.node.isCompleted
-                          ? widget.node.color.withValues(alpha: 0.95)
-                          : widget.node.color.withValues(alpha: 0.9),
+                        color: bgColor,
                         border: Border.all(
                           color: _getSelectionColor(),
                           width: _getSelectionWidth() * provider.scale,
                         ),
                         boxShadow: _buildShadows(provider.scale),
-                        gradient: widget.node.isCompleted ? RadialGradient(
+                        gradient: widget.node.isCompleted && provider.isDarkMode ? RadialGradient(
                           colors: [
-                            widget.node.color.withValues(alpha: 1.0),
+                            AppTheme.getNodeBackgroundColor(widget.node.color, provider.isDarkMode, isCompleted: true),
                             Colors.green.withValues(alpha: 0.3 * _pulseAnimation.value),
                             Colors.greenAccent.withValues(alpha: 0.5 * _pulseAnimation.value),
-                            widget.node.color.withValues(alpha: 0.9),
+                            AppTheme.getNodeBackgroundColor(widget.node.color, provider.isDarkMode, isCompleted: false),
                           ],
                           stops: const [0.0, 0.7, 0.85, 1.0],
                         ) : null,
@@ -552,11 +553,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     final provider = context.watch<CanvasProvider>();
 
     if (provider.selectedNodeForConnection == widget.node.id) {
-      return Colors.yellow;
+      return AppTheme.getSelectionColor(provider.isDarkMode);
     } else if (provider.isEraserMode) {
-      return Colors.red;
+      return AppTheme.getEraserColor(provider.isDarkMode);
     } else if (provider.isConnectMode) {
-      return Colors.white.withValues(alpha: 0.5);
+      return AppTheme.getConnectModeColor(provider.isDarkMode);
     } else {
       return Colors.transparent;
     }
@@ -578,33 +579,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
 
   List<BoxShadow> _buildShadows(double scale) {
     final provider = context.watch<CanvasProvider>();
-
-    List<BoxShadow> shadows = [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.3),
-        blurRadius: 8.0 * scale,
-        offset: const Offset(0, 4),
-      ),
-    ];
-
-    // Add yellow glow when selected for connection
-    if (provider.selectedNodeForConnection == widget.node.id) {
-      shadows.add(
-        BoxShadow(
-          color: Colors.yellow.withValues(alpha: 0.8),
-          blurRadius: 20.0 * scale,
-          spreadRadius: 5.0 * scale,
-        ),
-      );
-
-      shadows.add(
-        BoxShadow(
-          color: Colors.yellowAccent.withValues(alpha: 0.6),
-          blurRadius: 35.0 * scale,
-          spreadRadius: 10.0 * scale,
-        ),
-      );
-    }
+    List<BoxShadow> shadows = AppTheme.getNodeShadow(provider.isDarkMode, scale);
 
     // Add bluish glow for Android long-press
     if (_isLongPressing && defaultTargetPlatform == TargetPlatform.android) {
@@ -673,10 +648,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   }
 
   Widget _buildContent(double scale) {
+    final provider = context.watch<CanvasProvider>();
     // Calculate icon size as a fixed proportion of scaled node size (40% of node diameter)
-    // Icon scales with zoom just like the node does, maintaining consistent proportion
     final scaledSize = widget.node.size * scale;
     final iconSize = scaledSize * 0.4;
+    final iconColor = AppTheme.getNodeIconColor(provider.isDarkMode);
 
     return Stack(
       children: [
@@ -700,7 +676,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                       child: Icon(
                         _getPhosphorIcon(widget.node.icon),
                         size: iconSize,
-                        color: Colors.white,
+                        color: iconColor,
                         shadows: [
                           Shadow(
                             color: Colors.white.withValues(alpha: 0.5 * _pulseAnimation.value),
@@ -719,7 +695,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
             : Icon(
                 _getPhosphorIcon(widget.node.icon),
                 size: iconSize,
-                color: Colors.white,
+                color: iconColor,
               ),
         ),
         // Checkmark overlay for completed tasks
@@ -758,10 +734,9 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     // Start from bottom-left, similar to right-side FABs
     // We'll calculate from screen height in the caller
 
-    // Define button data (done/refresh, connect, delete)
+    // Define button data (done/refresh, delete)
     final buttonData = [
       {'icon': widget.node.isCompleted ? Icons.refresh : Icons.check, 'color': widget.node.isCompleted ? Colors.orange : Colors.green, 'onTap': _handleCompletionTap, 'heroTag': 'complete_${widget.node.id}'},
-      {'icon': Icons.link, 'color': Colors.yellow, 'onTap': _handleConnectorTap, 'heroTag': 'connect_${widget.node.id}'},
       {'icon': Icons.delete, 'color': Colors.red, 'onTap': _handleDeleteTap, 'heroTag': 'delete_${widget.node.id}'},
     ];
 
@@ -771,7 +746,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       final icon = data['icon'] as IconData;
       final color = data['color'] as Color;
       final onTap = data['onTap'] as VoidCallback;
-      final heroTag = data['heroTag'] as String;
 
       return Positioned(
         left: leftPadding,
@@ -784,13 +758,38 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
             opacity: 1.0,
             duration: Duration(milliseconds: 200 + (index * 50)),
             curve: Curves.easeOut,
-            child: FloatingActionButton(
-              heroTag: heroTag,
-              onPressed: onTap,
-              backgroundColor: color,
-              child: Icon(
-                icon,
-                color: Colors.white,
+            child: GestureDetector(
+              onTap: onTap,
+              child: Consumer<CanvasProvider>(
+                builder: (context, provider, child) => Container(
+                  width: buttonSize,
+                  height: buttonSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color.withValues(alpha: 0.9),
+                    border: Border.all(
+                      color: AppTheme.getActionButtonBorder(provider.isDarkMode),
+                      width: 2.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 8.0,
+                        offset: const Offset(0, 2),
+                      ),
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.3),
+                        blurRadius: 12.0,
+                        spreadRadius: 2.0,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    icon,
+                    color: Colors.white,
+                    size: buttonSize * 0.5,
+                  ),
+                ),
               ),
             ),
           ),

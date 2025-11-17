@@ -22,7 +22,9 @@ class CanvasProvider with ChangeNotifier {
   String? _newlyCreatedNodeId; // Track newly created node for immediate editing
   String? _nodeShowingInfo; // Track which node is showing info panel
   String? _nodeWithActiveButtons; // Track which node has active action buttons
-  
+
+  // Theme mode
+  bool _isDarkMode = true;
 
   // Getters
   List<TodoNode> get nodes => List.unmodifiable(_nodes);
@@ -38,6 +40,7 @@ class CanvasProvider with ChangeNotifier {
   String? get nodeShowingInfo => _nodeShowingInfo;
   bool get isInfoPanelOpen => _nodeShowingInfo != null;
   String? get nodeWithActiveButtons => _nodeWithActiveButtons;
+  bool get isDarkMode => _isDarkMode;
 
 
   // Add a new node at the given position with immediate editing and zoom
@@ -63,8 +66,10 @@ class CanvasProvider with ChangeNotifier {
     _nodes.add(node);
     _newlyCreatedNodeId = node.id; // Mark as newly created for immediate editing
 
-    // Don't zoom or pan - just create the node at the clicked position
-    // This prevents any zoom changes when creating nodes
+    // Zoom to the new node for better editing experience using consistent 14% screen size
+    if (viewSize != null) {
+      zoomToNodeForEditing(node.id, viewSize);
+    }
 
     // Auto-exit add node mode after creating a node
     exitAddNodeMode();
@@ -87,19 +92,26 @@ class CanvasProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Center the node without changing zoom - maintains current zoom level
+  // Zoom to node for editing with consistent 14% screen size ratio
   void zoomToNodeForEditing(String nodeId, Size screenSize) {
     final node = _nodes.firstWhere((n) => n.id == nodeId);
-
-    // Keep the current scale, don't change zoom at all
-    // Just center the node at the current zoom level
+    
+    // Calculate target scale to make node 20% of screen size
+    // node.size * targetScale = 20% of smaller screen dimension
+    final targetScreenSize = (screenSize.width < screenSize.height ? screenSize.width : screenSize.height) * 0.20;
+    final targetScale = targetScreenSize / node.size;
+    
+    // Clamp the scale to reasonable bounds
+    final clampedScale = targetScale.clamp(0.3, 10.0);
+    
+    // Calculate the center of the screen
     final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
-
+    
     // Set the pan offset so the node appears at screen center
-    final targetPanOffset = screenCenter - (node.position * _scale);
-
+    final targetPanOffset = screenCenter - (node.position * clampedScale);
+    
     _panOffset = targetPanOffset;
-    // _scale stays the same - no zoom change!
+    _scale = clampedScale;
     notifyListeners();
   }
 
@@ -488,6 +500,12 @@ class CanvasProvider with ChangeNotifier {
     } else {
       _nodeWithActiveButtons = nodeId;
     }
+    notifyListeners();
+  }
+
+  // Toggle theme mode
+  void toggleThemeMode() {
+    _isDarkMode = !_isDarkMode;
     notifyListeners();
   }
 

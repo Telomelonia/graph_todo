@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/connection.dart';
 import '../models/todo_node.dart';
+import '../theme/app_theme.dart';
 import 'dart:math' as math;
 
 class ConnectionPainter extends CustomPainter {
@@ -13,6 +14,7 @@ class ConnectionPainter extends CustomPainter {
   final double animationValue;
   final String? hoveredConnectionId;
   final VoidCallback? onConnectionDelete;
+  final bool isDarkMode;
 
   ConnectionPainter({
     required this.connections,
@@ -24,6 +26,7 @@ class ConnectionPainter extends CustomPainter {
     this.animationValue = 0.0,
     this.hoveredConnectionId,
     this.onConnectionDelete,
+    required this.isDarkMode,
   });
 
   @override
@@ -50,10 +53,11 @@ class ConnectionPainter extends CustomPainter {
 
     // Draw pulsing circle around selected node
     final pulseAlpha = 0.8 * (0.5 + 0.5 * math.sin(animationValue * 6));
+    final selectionColor = AppTheme.getSelectionColor(isDarkMode);
     final pulsePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
-      ..color = Colors.yellow.withValues(alpha: pulseAlpha);
+      ..color = selectionColor.withValues(alpha: pulseAlpha);
 
     canvas.drawCircle(
       fromPos,
@@ -66,9 +70,10 @@ class ConnectionPainter extends CustomPainter {
   }
 
   void _drawAnimatedArrows(Canvas canvas, Offset center, double radius) {
+    final selectionColor = AppTheme.getSelectionColor(isDarkMode);
     final arrowPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.yellow.withValues(alpha: 0.7);
+      ..color = selectionColor.withValues(alpha: 0.7);
 
     // Draw 8 arrows in a circle
     for (int i = 0; i < 8; i++) {
@@ -147,14 +152,14 @@ class ConnectionPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = (8.0 * scale).clamp(4.0, 16.0)
         ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFF4CAF50).withValues(alpha: 0.3);
+        ..color = AppTheme.primaryGreen.withValues(alpha: 0.3);
 
       canvas.drawLine(connectionPoints.from, connectionPoints.to, glowPaint);
     } else if (connection.isCharging) {
       _drawChargingConnection(canvas, connectionPoints, connection, scale);
       return;
     } else {
-      paint.color = Colors.white.withValues(alpha: 0.6);
+      paint.color = AppTheme.getConnectionColor(isDarkMode);
     }
 
     // Draw the main connection line
@@ -180,7 +185,7 @@ class ConnectionPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = (3.0 * scale).clamp(1.0, 6.0)
       ..strokeCap = StrokeCap.round
-      ..color = Colors.white.withValues(alpha: 0.4);
+      ..color = AppTheme.getConnectionColor(isDarkMode).withValues(alpha: 0.4);
 
     canvas.drawLine(points.from, points.to, basePaint);
 
@@ -213,13 +218,13 @@ class ConnectionPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = (4.0 * scale).clamp(2.0, 8.0)
         ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFF4CAF50);
+        ..color = AppTheme.primaryGreen;
 
       final glowPaint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = (8.0 * scale).clamp(4.0, 16.0)
         ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFF4CAF50).withValues(alpha: 0.5);
+        ..color = AppTheme.primaryGreen.withValues(alpha: 0.5);
 
       if (connection.chargingProgress > 0) {
         canvas.drawLine(chargingStartPoint, chargingEndPoint, glowPaint);
@@ -244,9 +249,7 @@ class ConnectionPainter extends CustomPainter {
   ) {
     final dotPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = isGreen
-          ? const Color(0xFF4CAF50)
-          : Colors.white.withValues(alpha: 0.8);
+      ..color = AppTheme.getConnectionDotColor(isDarkMode, isGolden: isGreen);
 
     final dotRadius = (4.0 * scale).clamp(2.0, 8.0);
     canvas.drawCircle(points.from, dotRadius, dotPaint);
@@ -332,7 +335,8 @@ class ConnectionPainter extends CustomPainter {
         isConnectMode != oldDelegate.isConnectMode ||
         selectedNodeForConnection != oldDelegate.selectedNodeForConnection ||
         animationValue != oldDelegate.animationValue ||
-        hoveredConnectionId != oldDelegate.hoveredConnectionId;
+        hoveredConnectionId != oldDelegate.hoveredConnectionId ||
+        isDarkMode != oldDelegate.isDarkMode;
   }
 }
 
