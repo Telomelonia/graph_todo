@@ -315,39 +315,37 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
     
     late double panelLeft;
     late double panelTop;
-    late double targetScale;
     late Offset nodeTargetPosition;
-    
+
+    // Use current zoom level instead of fixed target scales
+    final currentScale = provider.scale;
+
     if (isMobile) {
       // Mobile layout: node at top center, panel below
-      targetScale = 1.2;
       nodeTargetPosition = Offset(screenCenter.dx, screenSize.height * 0.25);
       panelLeft = (screenSize.width - panelWidth) / 2;
       panelTop = screenSize.height * 0.45;
     } else {
       // Desktop layout: node on left, panel on right, both centered vertically
-      targetScale = 1.5;
       nodeTargetPosition = Offset(screenSize.width * 0.3, screenCenter.dy);
       panelLeft = screenSize.width * 0.55;
       panelTop = (screenSize.height - panelHeight) / 2;
-      
+
       // Ensure panel doesn't go off screen
       if (panelLeft + panelWidth > screenSize.width - 20) {
         panelLeft = screenSize.width - panelWidth - 20;
       }
     }
-    
+
     // Ensure panel fits on screen
     panelLeft = panelLeft.clamp(20.0, screenSize.width - panelWidth - 20);
     panelTop = panelTop.clamp(20.0, screenSize.height - panelHeight - 20);
-    
-    // Auto-adjust view to center node and panel
+
+    // Auto-adjust view to center node (without changing zoom level)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final targetPanOffset = nodeTargetPosition - (widget.node.position * targetScale);
-      if ((provider.panOffset - targetPanOffset).distance > 10 || 
-          (provider.scale - targetScale).abs() > 0.1) {
+      final targetPanOffset = nodeTargetPosition - (widget.node.position * currentScale);
+      if ((provider.panOffset - targetPanOffset).distance > 10) {
         provider.updatePanOffset(targetPanOffset - provider.panOffset);
-        provider.updateScale(targetScale);
       }
     });
 

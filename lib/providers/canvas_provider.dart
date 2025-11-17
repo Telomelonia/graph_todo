@@ -63,10 +63,8 @@ class CanvasProvider with ChangeNotifier {
     _nodes.add(node);
     _newlyCreatedNodeId = node.id; // Mark as newly created for immediate editing
 
-    // Zoom to the new node for better editing experience using consistent 14% screen size
-    if (viewSize != null) {
-      zoomToNodeForEditing(node.id, viewSize);
-    }
+    // Don't zoom or pan - just create the node at the clicked position
+    // This prevents any zoom changes when creating nodes
 
     // Auto-exit add node mode after creating a node
     exitAddNodeMode();
