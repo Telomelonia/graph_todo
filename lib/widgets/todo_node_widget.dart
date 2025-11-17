@@ -761,7 +761,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     // Define button data (done/refresh, connect, delete)
     final buttonData = [
       {'icon': widget.node.isCompleted ? Icons.refresh : Icons.check, 'color': widget.node.isCompleted ? Colors.orange : Colors.green, 'onTap': _handleCompletionTap, 'heroTag': 'complete_${widget.node.id}'},
-      {'icon': Icons.link, 'color': Colors.yellow, 'onTap': _handleConnectorTap, 'heroTag': 'connect_${widget.node.id}'},
+      {'icon': Icons.link, 'color': const Color(0xFF64B5F6), 'onTap': _handleConnectorTap, 'heroTag': 'connect_${widget.node.id}'}, // Softer blue
       {'icon': Icons.delete, 'color': Colors.red, 'onTap': _handleDeleteTap, 'heroTag': 'delete_${widget.node.id}'},
     ];
 
