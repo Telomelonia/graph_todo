@@ -437,7 +437,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                 // Add node mode indicator
                 if (provider.isAddNodeMode)
                   Positioned(
-                    top: 50,
+                    top: 70,
                     left: 20,
                     child: Container(
                       padding: const EdgeInsets.all(16),
@@ -458,7 +458,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                 // Eraser mode indicator
                 if (provider.isEraserMode)
                   Positioned(
-                    top: 100,
+                    top: 70,
                     left: 20,
                     child: Container(
                       padding: const EdgeInsets.all(16),
@@ -497,18 +497,22 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     ),
                   ),
 
-                // Zoom level indicator
+                // Zoom level indicator (top left)
                 Positioned(
-                  bottom: 20,
-                  right: 20,
+                  top: 20,
+                  left: 20,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
                     ),
                     child: Text(
-                      '${(provider.scale * 100).toInt()}%',
+                      'Zoom: ${(provider.scale * 100).toInt()}%',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -538,27 +542,48 @@ class GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const gridSize = 50.0;
+    const smallGridSize = 10.0; // Smaller grid for high zoom levels
+
+    // Main grid paint (normal opacity)
     final paint = Paint()
       ..color = Colors.white.withValues(alpha: 0.1)
       ..strokeWidth = 1.0;
 
-    // Only draw grid if scale is reasonable
-    if (scale < 0.3) return;
+    // Small grid paint (slightly more subtle)
+    final smallPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.05)
+      ..strokeWidth = 0.5;
 
+    // Draw main grid (always visible above 30% zoom)
     final scaledGridSize = gridSize * scale;
+    final gridOffsetX = panOffset.dx % scaledGridSize;
+    final gridOffsetY = panOffset.dy % scaledGridSize;
 
-    // Calculate visible area
-    final startX = (-panOffset.dx % scaledGridSize);
-    final startY = (-panOffset.dy % scaledGridSize);
-
-    // Draw vertical lines
-    for (double x = startX; x < size.width; x += scaledGridSize) {
+    // Draw main grid vertical lines
+    for (double x = gridOffsetX; x < size.width; x += scaledGridSize) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
 
-    // Draw horizontal lines
-    for (double y = startY; y < size.height; y += scaledGridSize) {
+    // Draw main grid horizontal lines
+    for (double y = gridOffsetY; y < size.height; y += scaledGridSize) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+
+    // Draw smaller grid when zoomed in beyond 500% (scale > 5.0)
+    if (scale > 5.0) {
+      final scaledSmallGridSize = smallGridSize * scale;
+      final smallGridOffsetX = panOffset.dx % scaledSmallGridSize;
+      final smallGridOffsetY = panOffset.dy % scaledSmallGridSize;
+
+      // Draw small grid vertical lines
+      for (double x = smallGridOffsetX; x < size.width; x += scaledSmallGridSize) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), smallPaint);
+      }
+
+      // Draw small grid horizontal lines
+      for (double y = smallGridOffsetY; y < size.height; y += scaledSmallGridSize) {
+        canvas.drawLine(Offset(0, y), Offset(size.width, y), smallPaint);
+      }
     }
   }
 

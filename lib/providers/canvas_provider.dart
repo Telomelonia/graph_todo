@@ -99,7 +99,7 @@ class CanvasProvider with ChangeNotifier {
     final targetScale = targetScreenSize / node.size;
     
     // Clamp the scale to reasonable bounds
-    final clampedScale = targetScale.clamp(0.1, 5.0);
+    final clampedScale = targetScale.clamp(0.3, 10.0);
     
     // Calculate the center of the screen
     final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
@@ -221,13 +221,13 @@ class CanvasProvider with ChangeNotifier {
   }
 
   void updateScale(double newScale) {
-    _scale = newScale.clamp(0.1, 5.0);
+    _scale = newScale.clamp(0.3, 10.0);
     notifyListeners();
   }
 
   void zoom(double scaleDelta, Offset focalPoint) {
     final oldScale = _scale;
-    final newScale = (_scale * scaleDelta).clamp(0.1, 5.0);
+    final newScale = (_scale * scaleDelta).clamp(0.3, 10.0);
 
     if (newScale != oldScale) {
       // Adjust pan offset to keep focal point stationary during zoom
@@ -550,7 +550,7 @@ class CanvasProvider with ChangeNotifier {
 
       final scaleData = result.canvasState!['scale'] as num?;
       if (scaleData != null) {
-        _scale = scaleData.toDouble().clamp(0.1, 5.0);
+        _scale = scaleData.toDouble().clamp(0.3, 10.0);
       }
     }
 
