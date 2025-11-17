@@ -43,6 +43,11 @@ class HomePage extends StatelessWidget {
       body: const CanvasWidget(),
       floatingActionButton: Consumer<CanvasProvider>(
         builder: (context, provider, child) {
+          // Hide FAB buttons when info panel is open
+          if (provider.isInfoPanelOpen) {
+            return const SizedBox.shrink();
+          }
+
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [

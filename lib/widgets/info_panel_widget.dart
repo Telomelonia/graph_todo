@@ -22,6 +22,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
   late TextEditingController _descriptionController;
   late Color _selectedColor;
   late String _selectedIcon;
+  late CanvasProvider _provider;
 
   // Predefined color options
   final List<Color> _colorOptions = [
@@ -47,7 +48,15 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _provider = Provider.of<CanvasProvider>(context, listen: false);
+  }
+
+  @override
   void dispose() {
+    // Auto-save changes when widget is disposed (closed by any means)
+    _saveChangesWithProvider(_provider);
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -233,31 +242,38 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
     }
   }
 
-  void _saveChanges() {
-    final provider = context.read<CanvasProvider>();
-    
+  void _saveChangesWithProvider(CanvasProvider provider) {
     // Update title if changed
     if (_titleController.text != widget.node.text) {
       provider.updateNodeText(widget.node.id, _titleController.text.trim().isEmpty ? 'New Task' : _titleController.text);
     }
-    
+
     // Update description if changed
     if (_descriptionController.text != widget.node.description) {
       provider.updateNodeDescription(widget.node.id, _descriptionController.text);
     }
-    
+
     // Update icon if changed
     if (_selectedIcon != widget.node.icon) {
       provider.updateNodeIcon(widget.node.id, _selectedIcon);
     }
-    
+
     // Update color if changed
     if (_selectedColor != widget.node.color) {
       provider.updateNodeColor(widget.node.id, _selectedColor);
     }
-    
+  }
+
+  void _saveChanges() {
+    _saveChangesWithProvider(_provider);
+  }
+
+  void _closeAndSave() {
+    // Save all changes before closing
+    _saveChanges();
+
     // Close the panel
-    provider.hideNodeInfo();
+    _provider.hideNodeInfo();
   }
 
   void _showIconSelector() {
@@ -283,7 +299,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.read<CanvasProvider>();
+    final provider = Provider.of<CanvasProvider>(context, listen: false);
     final screenSize = MediaQuery.of(context).size;
     
     // Calculate responsive panel dimensions
@@ -380,7 +396,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                     ),
                     const Spacer(),
                     IconButton(
-                      onPressed: () => provider.hideNodeInfo(),
+                      onPressed: _closeAndSave,
                       icon: const Icon(Icons.close),
                       iconSize: 18,
                       color: Colors.white.withValues(alpha: 0.7),
@@ -570,47 +586,6 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       ),
                     ],
                   ),
-                ),
-              ),
-              
-              // Action buttons
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    ElevatedButton(
-                      onPressed: _saveChanges,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(fontSize: 13),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () => provider.hideNodeInfo(),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ],

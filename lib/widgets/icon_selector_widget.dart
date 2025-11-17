@@ -371,7 +371,6 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
       case 'basketball': return PhosphorIcons.basketball();
       case 'soccer-ball': return PhosphorIcons.soccerBall();
       case 'tennis-ball': return PhosphorIcons.basketball();
-      case 'barbell': return PhosphorIcons.barbell();
       case 'pill': return PhosphorIcons.pill();
       case 'first-aid': return PhosphorIcons.firstAid();
       case 'thermometer': return PhosphorIcons.thermometer();
@@ -461,13 +460,8 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
       case 'toolbox': return PhosphorIcons.toolbox();
       case 'ruler': return PhosphorIcons.ruler();
       case 'knife': return PhosphorIcons.knife();
-      case 'gear': return PhosphorIcons.gear();
-      case 'gear': return PhosphorIcons.gear();
       case 'magnet': return PhosphorIcons.magnet();
       case 'nut': return PhosphorIcons.nut();
-      case 'gear': return PhosphorIcons.gear();
-      case 'gear': return PhosphorIcons.gear();
-      case 'ruler': return PhosphorIcons.ruler();
       case 'tape-measure': return PhosphorIcons.ruler();
       case 'hard-hat': return PhosphorIcons.hardHat();
       
@@ -504,8 +498,6 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
       case 'bread': return PhosphorIcons.bread();
       case 'carrot': return PhosphorIcons.carrot();
       case 'martini': return PhosphorIcons.martini();
-      case 'wine': return PhosphorIcons.wine();
-      case 'cooking-pot': return PhosphorIcons.cookingPot();
       case 'egg': return PhosphorIcons.egg();
       case 'pepper': return PhosphorIcons.pepper();
       
@@ -521,8 +513,6 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
       case 'television': return PhosphorIcons.television();
       case 'washing-machine': return PhosphorIcons.washingMachine();
       case 'oven': return PhosphorIcons.oven();
-      case 'house': return PhosphorIcons.house();
-      case 'broom': return PhosphorIcons.broom();
       case 'broom': return PhosphorIcons.broom();
       case 'toilet-paper': return PhosphorIcons.toiletPaper();
       case 'bathtub': return PhosphorIcons.bathtub();
@@ -557,11 +547,8 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
       case 'eyeglasses': return PhosphorIcons.eyeglasses();
       case 'sunglasses': return PhosphorIcons.sunglasses();
       case 'watch': return PhosphorIcons.watch();
-      case 'diamond': return PhosphorIcons.diamond();
-      case 'diamond': return PhosphorIcons.diamond();
       case 'baseball-cap': return PhosphorIcons.baseballCap();
-      case 'baseball-cap': return PhosphorIcons.baseballCap();
-      
+
       default: return PhosphorIcons.target(); // Default fallback
     }
   }
