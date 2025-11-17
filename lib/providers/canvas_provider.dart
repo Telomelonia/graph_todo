@@ -89,26 +89,19 @@ class CanvasProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Zoom to node for editing with consistent 14% screen size ratio
+  // Center the node without changing zoom - maintains current zoom level
   void zoomToNodeForEditing(String nodeId, Size screenSize) {
     final node = _nodes.firstWhere((n) => n.id == nodeId);
-    
-    // Calculate target scale to make node 20% of screen size
-    // node.size * targetScale = 20% of smaller screen dimension
-    final targetScreenSize = (screenSize.width < screenSize.height ? screenSize.width : screenSize.height) * 0.20;
-    final targetScale = targetScreenSize / node.size;
-    
-    // Clamp the scale to reasonable bounds
-    final clampedScale = targetScale.clamp(0.3, 10.0);
-    
-    // Calculate the center of the screen
+
+    // Keep the current scale, don't change zoom at all
+    // Just center the node at the current zoom level
     final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
-    
+
     // Set the pan offset so the node appears at screen center
-    final targetPanOffset = screenCenter - (node.position * clampedScale);
-    
+    final targetPanOffset = screenCenter - (node.position * _scale);
+
     _panOffset = targetPanOffset;
-    _scale = clampedScale;
+    // _scale stays the same - no zoom change!
     notifyListeners();
   }
 
