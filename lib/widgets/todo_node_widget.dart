@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../models/todo_node.dart';
 import '../providers/canvas_provider.dart';
+import '../theme/app_theme.dart';
 
 class TodoNodeWidget extends StatefulWidget {
   final TodoNode node;
@@ -494,11 +495,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     final provider = context.watch<CanvasProvider>();
 
     if (provider.selectedNodeForConnection == widget.node.id) {
-      return Colors.yellow;
+      return AppTheme.getSelectionColor(provider.isDarkMode);
     } else if (provider.isEraserMode) {
-      return Colors.red;
+      return AppTheme.getEraserColor(provider.isDarkMode);
     } else if (provider.isConnectMode) {
-      return Colors.white.withValues(alpha: 0.5);
+      return AppTheme.getConnectModeColor(provider.isDarkMode);
     } else {
       return Colors.transparent;
     }
@@ -519,13 +520,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   }
 
   List<BoxShadow> _buildShadows(double scale) {
-    List<BoxShadow> shadows = [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.3),
-        blurRadius: 8.0 * scale,
-        offset: const Offset(0, 4),
-      ),
-    ];
+    final provider = context.watch<CanvasProvider>();
+    List<BoxShadow> shadows = AppTheme.getNodeShadow(provider.isDarkMode, scale);
 
     // Add dramatic glow effects when completed
     if (widget.node.isCompleted) {
@@ -676,33 +672,35 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
             curve: Curves.easeOut,
             child: GestureDetector(
               onTap: onTap,
-              child: Container(
-                width: buttonSize,
-                height: buttonSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withValues(alpha: 0.9),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    width: 2.0,
+              child: Consumer<CanvasProvider>(
+                builder: (context, provider, child) => Container(
+                  width: buttonSize,
+                  height: buttonSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color.withValues(alpha: 0.9),
+                    border: Border.all(
+                      color: AppTheme.getActionButtonBorder(provider.isDarkMode),
+                      width: 2.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 8.0,
+                        offset: const Offset(0, 2),
+                      ),
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.3),
+                        blurRadius: 12.0,
+                        spreadRadius: 2.0,
+                      ),
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 8.0,
-                      offset: const Offset(0, 2),
-                    ),
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.3),
-                      blurRadius: 12.0,
-                      spreadRadius: 2.0,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: buttonSize * 0.5,
+                  child: Icon(
+                    icon,
+                    color: Colors.white,
+                    size: buttonSize * 0.5,
+                  ),
                 ),
               ),
             ),

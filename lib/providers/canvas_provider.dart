@@ -22,7 +22,9 @@ class CanvasProvider with ChangeNotifier {
   String? _newlyCreatedNodeId; // Track newly created node for immediate editing
   String? _nodeShowingInfo; // Track which node is showing info panel
   String? _nodeWithActiveButtons; // Track which node has active action buttons
-  
+
+  // Theme mode
+  bool _isDarkMode = true;
 
   // Getters
   List<TodoNode> get nodes => List.unmodifiable(_nodes);
@@ -38,6 +40,7 @@ class CanvasProvider with ChangeNotifier {
   String? get nodeShowingInfo => _nodeShowingInfo;
   bool get isInfoPanelOpen => _nodeShowingInfo != null;
   String? get nodeWithActiveButtons => _nodeWithActiveButtons;
+  bool get isDarkMode => _isDarkMode;
 
 
   // Add a new node at the given position with immediate editing and zoom
@@ -497,6 +500,12 @@ class CanvasProvider with ChangeNotifier {
     } else {
       _nodeWithActiveButtons = nodeId;
     }
+    notifyListeners();
+  }
+
+  // Toggle theme mode
+  void toggleThemeMode() {
+    _isDarkMode = !_isDarkMode;
     notifyListeners();
   }
 

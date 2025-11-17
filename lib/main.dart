@@ -8,6 +8,7 @@ import 'widgets/connection_painter.dart';
 import 'widgets/interactive_connection_widget.dart';
 import 'widgets/connection_endpoint_widget.dart';
 import 'widgets/info_panel_widget.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const GraphTodoApp());
@@ -38,14 +39,28 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
-      body: const CanvasWidget(),
+    return Consumer<CanvasProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          backgroundColor: AppTheme.getBackgroundColor(provider.isDarkMode),
+          body: const CanvasWidget(),
       floatingActionButton: Consumer<CanvasProvider>(
         builder: (context, provider, child) {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Theme toggle button
+              FloatingActionButton(
+                heroTag: "theme",
+                onPressed: provider.toggleThemeMode,
+                backgroundColor: provider.isDarkMode ? Colors.white : Colors.black87,
+                tooltip: provider.isDarkMode ? 'Light Mode' : 'Dark Mode',
+                child: Icon(
+                  provider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: provider.isDarkMode ? Colors.black : Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
               // Import button
               FloatingActionButton(
                 heroTag: "import",
@@ -122,6 +137,8 @@ class HomePage extends StatelessWidget {
           );
         },
       ),
+        );
+      },
     );
   }
 
@@ -354,6 +371,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                   painter: GridPainter(
                     scale: provider.scale,
                     panOffset: provider.panOffset,
+                    isDarkMode: provider.isDarkMode,
                   ),
                   size: Size.infinite,
                 ),
@@ -365,6 +383,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     nodes: provider.nodes,
                     scale: provider.scale,
                     panOffset: provider.panOffset,
+                    isDarkMode: provider.isDarkMode,
                   ),
                   size: Size.infinite,
                 ),
@@ -442,13 +461,13 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.9),
+                        color: AppTheme.getModeIndicatorBackground(provider.isDarkMode),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Click anywhere to add a new node',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.getTextColor(provider.isDarkMode),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -463,7 +482,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.9),
+                        color: AppTheme.getModeIndicatorBackground(provider.isDarkMode, isError: true),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
@@ -484,13 +503,16 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
+                        color: provider.isDarkMode
+                          ? Colors.black.withValues(alpha: 0.7)
+                          : Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(12),
+                        border: provider.isDarkMode ? null : Border.all(color: AppTheme.lightBorder),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Scroll wheel: zoom • Drag: pan',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.getTextColor(provider.isDarkMode),
                           fontSize: 11,
                         ),
                       ),
@@ -504,13 +526,16 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
+                      color: provider.isDarkMode
+                        ? Colors.black.withValues(alpha: 0.7)
+                        : Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(16),
+                      border: provider.isDarkMode ? null : Border.all(color: AppTheme.lightBorder),
                     ),
                     child: Text(
                       '${(provider.scale * 100).toInt()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppTheme.getTextColor(provider.isDarkMode),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -532,14 +557,19 @@ class _CanvasWidgetState extends State<CanvasWidget> {
 class GridPainter extends CustomPainter {
   final double scale;
   final Offset panOffset;
+  final bool isDarkMode;
 
-  GridPainter({required this.scale, required this.panOffset});
+  GridPainter({
+    required this.scale,
+    required this.panOffset,
+    required this.isDarkMode,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     const gridSize = 50.0;
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.1)
+      ..color = AppTheme.getGridColor(isDarkMode)
       ..strokeWidth = 1.0;
 
     // Only draw grid if scale is reasonable
@@ -564,6 +594,8 @@ class GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(GridPainter oldDelegate) {
-    return scale != oldDelegate.scale || panOffset != oldDelegate.panOffset;
+    return scale != oldDelegate.scale ||
+           panOffset != oldDelegate.panOffset ||
+           isDarkMode != oldDelegate.isDarkMode;
   }
 }
