@@ -423,12 +423,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     provider.removeNode(widget.node.id);
   }
 
-  void _handleInfoTap() {
-    final provider = context.read<CanvasProvider>();
-    provider.showNodeInfo(widget.node.id);
-    provider.hideNodeActionButtons();
-  }
-
   void _handleDoubleTap() {
     final provider = context.read<CanvasProvider>();
     if (!provider.isConnectMode && !provider.isEraserMode && !provider.isInfoPanelOpen) {
@@ -583,6 +577,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   }
 
   List<BoxShadow> _buildShadows(double scale) {
+    final provider = context.watch<CanvasProvider>();
+
     List<BoxShadow> shadows = [
       BoxShadow(
         color: Colors.black.withValues(alpha: 0.3),
@@ -590,6 +586,25 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
         offset: const Offset(0, 4),
       ),
     ];
+
+    // Add yellow glow when selected for connection
+    if (provider.selectedNodeForConnection == widget.node.id) {
+      shadows.add(
+        BoxShadow(
+          color: Colors.yellow.withValues(alpha: 0.8),
+          blurRadius: 20.0 * scale,
+          spreadRadius: 5.0 * scale,
+        ),
+      );
+
+      shadows.add(
+        BoxShadow(
+          color: Colors.yellowAccent.withValues(alpha: 0.6),
+          blurRadius: 35.0 * scale,
+          spreadRadius: 10.0 * scale,
+        ),
+      );
+    }
 
     // Add bluish glow for Android long-press
     if (_isLongPressing && defaultTargetPlatform == TargetPlatform.android) {
@@ -738,9 +753,10 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     // Start from bottom-left, similar to right-side FABs
     // We'll calculate from screen height in the caller
 
-    // Define button data (done/refresh, delete)
+    // Define button data (done/refresh, connect, delete)
     final buttonData = [
       {'icon': widget.node.isCompleted ? Icons.refresh : Icons.check, 'color': widget.node.isCompleted ? Colors.orange : Colors.green, 'onTap': _handleCompletionTap, 'heroTag': 'complete_${widget.node.id}'},
+      {'icon': Icons.link, 'color': Colors.yellow, 'onTap': _handleConnectorTap, 'heroTag': 'connect_${widget.node.id}'},
       {'icon': Icons.delete, 'color': Colors.red, 'onTap': _handleDeleteTap, 'heroTag': 'delete_${widget.node.id}'},
     ];
 

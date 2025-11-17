@@ -552,6 +552,8 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                               setState(() {
                                 _selectedColor = color;
                               });
+                              // Immediately update the node color for real-time feedback
+                              _provider.updateNodeColor(widget.node.id, color);
                             },
                             child: Container(
                               width: 32,
