@@ -16,7 +16,9 @@ void main() {
       expect(node.position, equals(const Offset(10, 20)));
       expect(node.isCompleted, isFalse);
       expect(node.color, equals(const Color(0xFF6366F1)));
-      expect(node.size, equals(60.0));
+      expect(node.size, equals(120.0));
+      expect(node.icon, equals('target')); // default icon
+      expect(node.description, equals('')); // default description
     });
 
     test('creates node with custom values', () {
@@ -144,6 +146,130 @@ void main() {
       expect(restored.isCompleted, equals(original.isCompleted));
       expect(restored.color, equals(original.color));
       expect(restored.size, equals(original.size));
+    });
+
+    // Icon and Description Tests
+    test('creates node with custom icon and description', () {
+      final node = TodoNode(
+        id: 'test-id',
+        text: 'Test task',
+        position: const Offset(10, 20),
+        icon: 'heart',
+        description: 'This is a test description',
+      );
+
+      expect(node.icon, equals('heart'));
+      expect(node.description, equals('This is a test description'));
+    });
+
+    test('copyWith updates icon and description', () {
+      final original = TodoNode(
+        id: 'test-id',
+        text: 'Original text',
+        position: const Offset(10, 20),
+        icon: 'target',
+        description: 'Original description',
+      );
+
+      final updated = original.copyWith(
+        icon: 'code',
+        description: 'Updated description',
+      );
+
+      expect(updated.icon, equals('code'));
+      expect(updated.description, equals('Updated description'));
+      expect(updated.text, equals('Original text')); // unchanged
+    });
+
+    test('toJson includes icon and description', () {
+      final node = TodoNode(
+        id: 'test-id',
+        text: 'Test task',
+        position: const Offset(10, 20),
+        icon: 'brain',
+        description: 'Learning new skills',
+      );
+
+      final json = node.toJson();
+
+      expect(json['icon'], equals('brain'));
+      expect(json['description'], equals('Learning new skills'));
+    });
+
+    test('fromJson loads icon and description', () {
+      final json = {
+        'id': 'test-id',
+        'text': 'Test task',
+        'position': {'dx': 10.0, 'dy': 20.0},
+        'icon': 'laptop',
+        'description': 'Work on project',
+      };
+
+      final node = TodoNode.fromJson(json);
+
+      expect(node.icon, equals('laptop'));
+      expect(node.description, equals('Work on project'));
+    });
+
+    test('fromJson handles missing icon and description with defaults', () {
+      final json = {
+        'id': 'test-id',
+        'text': 'Test task',
+        'position': {'dx': 10.0, 'dy': 20.0},
+        // icon and description missing
+      };
+
+      final node = TodoNode.fromJson(json);
+
+      expect(node.icon, equals('target')); // default
+      expect(node.description, equals('')); // default
+    });
+
+    test('roundtrip serialization preserves icon and description', () {
+      final original = TodoNode(
+        id: 'test-id',
+        text: 'Test task',
+        position: const Offset(10.5, 20.7),
+        icon: 'star',
+        description: 'Important task',
+        isCompleted: false,
+        color: const Color(0xFF6366F1),
+        size: 120.0,
+      );
+
+      final json = original.toJson();
+      final restored = TodoNode.fromJson(json);
+
+      expect(restored.icon, equals(original.icon));
+      expect(restored.description, equals(original.description));
+      expect(restored.id, equals(original.id));
+      expect(restored.text, equals(original.text));
+    });
+
+    test('fromJson handles empty string description', () {
+      final json = {
+        'id': 'test-id',
+        'text': 'Test task',
+        'position': {'dx': 10.0, 'dy': 20.0},
+        'description': '',
+      };
+
+      final node = TodoNode.fromJson(json);
+
+      expect(node.description, equals(''));
+    });
+
+    test('fromJson handles null icon gracefully', () {
+      final json = {
+        'id': 'test-id',
+        'text': 'Test task',
+        'position': {'dx': 10.0, 'dy': 20.0},
+        'icon': null,
+      };
+
+      final node = TodoNode.fromJson(json);
+
+      expect(node.icon, equals('target')); // falls back to default
     });
   });
 }

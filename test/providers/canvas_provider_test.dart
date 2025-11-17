@@ -295,5 +295,315 @@ void main() {
       expect(provider.selectedNodeForConnection, isNull);
       expect(provider.draggedNode, isNull);
     });
+
+    // New v0.5.0+ Feature Tests
+    test('updateNodeDescription modifies node description', () {
+      provider.addNode(const Offset(10, 20), text: 'Task');
+      final nodeId = provider.nodes.first.id;
+
+      provider.updateNodeDescription(nodeId, 'New description');
+
+      expect(provider.nodes.first.description, equals('New description'));
+    });
+
+    test('updateNodeDescription ignores non-existent node', () {
+      provider.addNode(const Offset(10, 20), text: 'Task');
+
+      provider.updateNodeDescription('non-existent', 'Description');
+
+      expect(provider.nodes.first.description, equals('')); // unchanged
+    });
+
+    test('updateNodeIcon modifies node icon', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.updateNodeIcon(nodeId, 'heart');
+
+      expect(provider.nodes.first.icon, equals('heart'));
+    });
+
+    test('updateNodeColor modifies node color', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.updateNodeColor(nodeId, Colors.red);
+
+      expect(provider.nodes.first.color, equals(Colors.red));
+    });
+
+    test('toggleAddNodeMode switches mode correctly', () {
+      expect(provider.isAddNodeMode, isFalse);
+
+      provider.toggleAddNodeMode();
+      expect(provider.isAddNodeMode, isTrue);
+
+      provider.toggleAddNodeMode();
+      expect(provider.isAddNodeMode, isFalse);
+    });
+
+    test('exitAddNodeMode disables add node mode', () {
+      provider.toggleAddNodeMode();
+      expect(provider.isAddNodeMode, isTrue);
+
+      provider.exitAddNodeMode();
+      expect(provider.isAddNodeMode, isFalse);
+    });
+
+    test('toggleEraserMode switches mode correctly', () {
+      expect(provider.isEraserMode, isFalse);
+
+      provider.toggleEraserMode();
+      expect(provider.isEraserMode, isTrue);
+
+      provider.toggleEraserMode();
+      expect(provider.isEraserMode, isFalse);
+    });
+
+    test('toggleEraserMode exits other modes', () {
+      provider.toggleConnectMode();
+      provider.toggleAddNodeMode();
+
+      provider.toggleEraserMode();
+
+      expect(provider.isEraserMode, isTrue);
+      expect(provider.isConnectMode, isFalse);
+      expect(provider.isAddNodeMode, isFalse);
+      expect(provider.selectedNodeForConnection, isNull);
+    });
+
+    test('exitEraserMode disables eraser mode', () {
+      provider.toggleEraserMode();
+      expect(provider.isEraserMode, isTrue);
+
+      provider.exitEraserMode();
+      expect(provider.isEraserMode, isFalse);
+    });
+
+    test('showNodeInfo sets info panel state', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      expect(provider.isInfoPanelOpen, isFalse);
+      expect(provider.nodeShowingInfo, isNull);
+
+      provider.showNodeInfo(nodeId);
+
+      expect(provider.isInfoPanelOpen, isTrue);
+      expect(provider.nodeShowingInfo, equals(nodeId));
+    });
+
+    test('hideNodeInfo clears info panel state', () {
+      provider.addNode(const Offset(10, 20));
+      provider.showNodeInfo(provider.nodes.first.id);
+
+      provider.hideNodeInfo();
+
+      expect(provider.isInfoPanelOpen, isFalse);
+      expect(provider.nodeShowingInfo, isNull);
+    });
+
+    test('showNodeActionButtons sets active buttons state', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.showNodeActionButtons(nodeId);
+
+      expect(provider.nodeWithActiveButtons, equals(nodeId));
+    });
+
+    test('hideNodeActionButtons clears active buttons state', () {
+      provider.addNode(const Offset(10, 20));
+      provider.showNodeActionButtons(provider.nodes.first.id);
+
+      provider.hideNodeActionButtons();
+
+      expect(provider.nodeWithActiveButtons, isNull);
+    });
+
+    test('toggleNodeActionButtons switches state', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.toggleNodeActionButtons(nodeId);
+      expect(provider.nodeWithActiveButtons, equals(nodeId));
+
+      provider.toggleNodeActionButtons(nodeId);
+      expect(provider.nodeWithActiveButtons, isNull);
+    });
+
+    test('toggleNodeActionButtons switches between different nodes', () {
+      provider.addNode(const Offset(10, 20));
+      provider.addNode(const Offset(30, 40));
+      final node1Id = provider.nodes[0].id;
+      final node2Id = provider.nodes[1].id;
+
+      provider.toggleNodeActionButtons(node1Id);
+      expect(provider.nodeWithActiveButtons, equals(node1Id));
+
+      provider.toggleNodeActionButtons(node2Id);
+      expect(provider.nodeWithActiveButtons, equals(node2Id));
+    });
+
+    test('removeConnection removes specific connection', () {
+      provider.addNode(const Offset(10, 20));
+      provider.addNode(const Offset(30, 40));
+      provider.createConnection(provider.nodes[0].id, provider.nodes[1].id);
+
+      final connectionId = provider.connections.first.id;
+      provider.removeConnection(connectionId);
+
+      expect(provider.connections, isEmpty);
+    });
+
+    test('updateConnectionEndpoint changes connection target', () {
+      provider.addNode(const Offset(10, 20)); // node 0
+      provider.addNode(const Offset(30, 40)); // node 1
+      provider.addNode(const Offset(50, 60)); // node 2
+      final node0Id = provider.nodes[0].id;
+      final node1Id = provider.nodes[1].id;
+      final node2Id = provider.nodes[2].id;
+
+      provider.createConnection(node0Id, node1Id);
+      final connectionId = provider.connections.first.id;
+
+      // Change the 'to' endpoint from node1 to node2
+      provider.updateConnectionEndpoint(connectionId, false, node2Id);
+
+      expect(provider.connections.first.toNodeId, equals(node2Id));
+      expect(provider.connections.first.fromNodeId, equals(node0Id));
+    });
+
+    test('updateConnectionEndpoint prevents self-connection', () {
+      provider.addNode(const Offset(10, 20));
+      provider.addNode(const Offset(30, 40));
+      final node0Id = provider.nodes[0].id;
+      final node1Id = provider.nodes[1].id;
+
+      provider.createConnection(node0Id, node1Id);
+      final connectionId = provider.connections.first.id;
+
+      // Try to connect endpoint to same node
+      provider.updateConnectionEndpoint(connectionId, false, node0Id);
+
+      // Connection should remain unchanged
+      expect(provider.connections.first.toNodeId, equals(node1Id));
+    });
+
+    test('updateConnectionEndpoint prevents duplicate connections', () {
+      provider.addNode(const Offset(10, 20)); // node 0
+      provider.addNode(const Offset(30, 40)); // node 1
+      provider.addNode(const Offset(50, 60)); // node 2
+      final node0Id = provider.nodes[0].id;
+      final node1Id = provider.nodes[1].id;
+      final node2Id = provider.nodes[2].id;
+
+      provider.createConnection(node0Id, node1Id);
+      provider.createConnection(node1Id, node2Id);
+
+      final firstConnectionId = provider.connections[0].id;
+
+      // Try to change first connection to duplicate the second
+      provider.updateConnectionEndpoint(firstConnectionId, true, node1Id);
+
+      // Should remain unchanged (prevents duplicate)
+      expect(provider.connections[0].fromNodeId, equals(node0Id));
+    });
+
+    test('isPointOnNode detects point inside node', () {
+      provider.addNode(const Offset(100, 100));
+      final node = provider.nodes.first;
+
+      // Point at center should be on node
+      final pointOnNode = provider.isPointOnNode(
+        provider.canvasToScreen(const Offset(100, 100)),
+        node,
+      );
+
+      expect(pointOnNode, isTrue);
+    });
+
+    test('isPointOnNode detects point outside node', () {
+      provider.addNode(const Offset(100, 100));
+      final node = provider.nodes.first;
+
+      // Point far away should not be on node
+      final pointOnNode = provider.isPointOnNode(
+        provider.canvasToScreen(const Offset(500, 500)),
+        node,
+      );
+
+      expect(pointOnNode, isFalse);
+    });
+
+    test('startConnectionFromNode enables connect mode with selection', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.startConnectionFromNode(nodeId);
+
+      expect(provider.isConnectMode, isTrue);
+      expect(provider.selectedNodeForConnection, equals(nodeId));
+    });
+
+    test('clearNewlyCreatedFlag clears the flag', () {
+      provider.addNode(const Offset(10, 20));
+
+      expect(provider.newlyCreatedNodeId, isNotNull);
+
+      provider.clearNewlyCreatedFlag();
+
+      expect(provider.newlyCreatedNodeId, isNull);
+    });
+
+    test('zoom adjusts scale with focal point', () {
+      const focalPoint = Offset(100, 100);
+
+      provider.zoom(1.2, focalPoint);
+
+      expect(provider.scale, equals(1.2));
+    });
+
+    test('zoom clamps scale to bounds', () {
+      provider.zoom(100.0, Offset.zero); // very large
+      expect(provider.scale, equals(10.0)); // clamped to max
+
+      provider.zoom(0.001, Offset.zero); // very small
+      expect(provider.scale, equals(0.3)); // clamped to min
+    });
+
+    test('setZoom sets absolute scale value', () {
+      provider.setZoom(2.5, Offset.zero);
+      expect(provider.scale, equals(2.5));
+
+      provider.setZoom(0.5, Offset.zero);
+      expect(provider.scale, equals(0.5));
+    });
+
+    test('zoomToNodeForEditing calculates correct scale', () {
+      const viewSize = Size(1000, 800);
+      provider.addNode(const Offset(100, 100), viewSize: viewSize);
+      final nodeId = provider.nodes.first.id;
+
+      provider.zoomToNodeForEditing(nodeId, viewSize);
+
+      // Node should be 20% of screen
+      // targetScreenSize = 800 * 0.20 = 160
+      // targetScale = 160 / node.size
+      expect(provider.scale, greaterThan(0.5));
+      expect(provider.scale, lessThan(10.0));
+    });
+
+    test('zoomToNodeWithScreenSize positions node at center', () {
+      const viewSize = Size(1000, 800);
+      provider.addNode(const Offset(100, 100), viewSize: viewSize);
+      final nodeId = provider.nodes.first.id;
+
+      provider.zoomToNodeWithScreenSize(nodeId, viewSize, targetScale: 2.0);
+
+      expect(provider.scale, equals(2.0));
+      // Pan offset should center the node
+      expect(provider.panOffset, isNot(equals(Offset.zero)));
+    });
   });
 }
