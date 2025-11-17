@@ -21,8 +21,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     with TickerProviderStateMixin {
   late AnimationController _glowController;
   late AnimationController _pulseController;
+  late AnimationController _longPressGlowController;
   late Animation<double> _glowAnimation;
   late Animation<double> _pulseAnimation;
+  late Animation<double> _longPressGlowAnimation;
+  bool _isLongPressing = false;
 
   @override
   void initState() {
@@ -52,6 +55,19 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     ).animate(CurvedAnimation(
       parent: _pulseController,
       curve: Curves.easeInOut,
+    ));
+
+    // Setup long-press glow animation for Android
+    _longPressGlowController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _longPressGlowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _longPressGlowController,
+      curve: Curves.easeOut,
     ));
 
     // Start animations if node is completed
@@ -91,7 +107,26 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   void dispose() {
     _glowController.dispose();
     _pulseController.dispose();
+    _longPressGlowController.dispose();
     super.dispose();
+  }
+
+  void _handleLongPressStart() {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      setState(() {
+        _isLongPressing = true;
+      });
+      _longPressGlowController.forward();
+    }
+  }
+
+  void _handleLongPressEnd() {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      setState(() {
+        _isLongPressing = false;
+      });
+      _longPressGlowController.reverse();
+    }
   }
 
   // Helper function to get PhosphorIcon from string name
@@ -149,7 +184,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       case 'hard-drive': return PhosphorIcons.hardDrive();
       case 'cpu': return PhosphorIcons.cpu();
       case 'memory': return PhosphorIcons.memory();
-      case 'circuit-board': return PhosphorIcons.gear();
+      case 'circuit-board': return PhosphorIcons.circuitry();
       case 'network': return PhosphorIcons.network();
       case 'browser': return PhosphorIcons.browser();
       case 'bug': return PhosphorIcons.bug();
@@ -169,8 +204,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       case 'person': return PhosphorIcons.person();
       case 'basketball': return PhosphorIcons.basketball();
       case 'soccer-ball': return PhosphorIcons.soccerBall();
-      case 'tennis-ball': return PhosphorIcons.basketball();
-      case 'barbell': return PhosphorIcons.barbell();
+      case 'tennis-ball': return PhosphorIcons.tennisBall();
       case 'pill': return PhosphorIcons.pill();
       case 'first-aid': return PhosphorIcons.firstAid();
       case 'thermometer': return PhosphorIcons.thermometer();
@@ -213,7 +247,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       case 'image': return PhosphorIcons.image();
       case 'sketch-logo': return PhosphorIcons.sketchLogo();
       case 'design-system': return PhosphorIcons.selection();
-      case 'color-palette': return PhosphorIcons.palette();
+      case 'color-palette': return PhosphorIcons.swatches();
       case 'scissors': return PhosphorIcons.scissors();
       
       // Communication & Social
@@ -223,7 +257,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       case 'users': return PhosphorIcons.users();
       case 'share': return PhosphorIcons.share();
       case 'megaphone': return PhosphorIcons.megaphone();
-      case 'video': return PhosphorIcons.videoCamera();
+      case 'video': return PhosphorIcons.video();
       case 'chat-text': return PhosphorIcons.chatText();
       case 'at': return PhosphorIcons.at();
       case 'hash': return PhosphorIcons.hash();
@@ -260,14 +294,9 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       case 'toolbox': return PhosphorIcons.toolbox();
       case 'ruler': return PhosphorIcons.ruler();
       case 'knife': return PhosphorIcons.knife();
-      case 'gear': return PhosphorIcons.gear();
-      case 'gear': return PhosphorIcons.gear();
       case 'magnet': return PhosphorIcons.magnet();
       case 'nut': return PhosphorIcons.nut();
-      case 'gear': return PhosphorIcons.gear();
-      case 'gear': return PhosphorIcons.gear();
-      case 'ruler': return PhosphorIcons.ruler();
-      case 'tape-measure': return PhosphorIcons.ruler();
+      case 'tape-measure': return PhosphorIcons.scissors();
       case 'hard-hat': return PhosphorIcons.hardHat();
       
       // Nature & Environment
@@ -303,8 +332,6 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       case 'bread': return PhosphorIcons.bread();
       case 'carrot': return PhosphorIcons.carrot();
       case 'martini': return PhosphorIcons.martini();
-      case 'wine': return PhosphorIcons.wine();
-      case 'cooking-pot': return PhosphorIcons.cookingPot();
       case 'egg': return PhosphorIcons.egg();
       case 'pepper': return PhosphorIcons.pepper();
       
@@ -320,13 +347,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       case 'television': return PhosphorIcons.television();
       case 'washing-machine': return PhosphorIcons.washingMachine();
       case 'oven': return PhosphorIcons.oven();
-      case 'house': return PhosphorIcons.house();
-      case 'broom': return PhosphorIcons.broom();
       case 'broom': return PhosphorIcons.broom();
       case 'toilet-paper': return PhosphorIcons.toiletPaper();
       case 'bathtub': return PhosphorIcons.bathtub();
       case 'garage': return PhosphorIcons.garage();
-      case 'garden': return PhosphorIcons.flower();
+      case 'garden': return PhosphorIcons.plant();
       
       // Entertainment & Games
       case 'game-controller': return PhosphorIcons.gameController();
@@ -338,7 +363,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       case 'magic-wand': return PhosphorIcons.magicWand();
       case 'balloon': return PhosphorIcons.balloon();
       case 'confetti': return PhosphorIcons.confetti();
-      case 'party-popper': return PhosphorIcons.confetti();
+      case 'party-popper': return PhosphorIcons.handbag();
       case 'gift': return PhosphorIcons.gift();
       case 'popcorn': return PhosphorIcons.popcorn();
       case 'mask-happy': return PhosphorIcons.maskHappy();
@@ -356,11 +381,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       case 'eyeglasses': return PhosphorIcons.eyeglasses();
       case 'sunglasses': return PhosphorIcons.sunglasses();
       case 'watch': return PhosphorIcons.watch();
-      case 'diamond': return PhosphorIcons.diamond();
-      case 'diamond': return PhosphorIcons.diamond();
       case 'baseball-cap': return PhosphorIcons.baseballCap();
-      case 'baseball-cap': return PhosphorIcons.baseballCap();
-      
+
       default: return PhosphorIcons.target(); // Default fallback
     }
   }
@@ -435,6 +457,8 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
               child: GestureDetector(
                 onTap: _handleTap,
                 onDoubleTap: _handleDoubleTap,
+                onLongPressStart: (_) => _handleLongPressStart(),
+                onLongPressEnd: (_) => _handleLongPressEnd(),
                 onPanStart: (details) {
                   context.read<CanvasProvider>().startDrag(widget.node);
                 },
@@ -451,14 +475,14 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                   context.read<CanvasProvider>().endDrag();
                 },
                 child: AnimatedBuilder(
-                  animation: Listenable.merge([_glowAnimation, _pulseAnimation]),
+                  animation: Listenable.merge([_glowAnimation, _pulseAnimation, _longPressGlowAnimation]),
                   builder: (context, child) {
                     return Container(
                       width: scaledSize,
                       height: scaledSize,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: widget.node.isCompleted 
+                        color: widget.node.isCompleted
                           ? widget.node.color.withValues(alpha: 0.95)
                           : widget.node.color.withValues(alpha: 0.9),
                         border: Border.all(
@@ -469,10 +493,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                         gradient: widget.node.isCompleted ? RadialGradient(
                           colors: [
                             widget.node.color.withValues(alpha: 1.0),
-                            widget.node.color.withValues(alpha: 0.7),
+                            Colors.green.withValues(alpha: 0.3 * _pulseAnimation.value),
+                            Colors.greenAccent.withValues(alpha: 0.5 * _pulseAnimation.value),
                             widget.node.color.withValues(alpha: 0.9),
                           ],
-                          stops: const [0.0, 0.7, 1.0],
+                          stops: const [0.0, 0.7, 0.85, 1.0],
                         ) : null,
                       ),
                       child: _buildContent(provider.scale),
@@ -484,6 +509,45 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
             // Action buttons (separate from node gesture detector)
             if (provider.nodeWithActiveButtons == widget.node.id)
               ..._buildActionButtons(screenPosition.dx, screenPosition.dy, scaledSize, provider.scale),
+            // Title display for Android long-press
+            if (_isLongPressing && defaultTargetPlatform == TargetPlatform.android && widget.node.text.isNotEmpty)
+              Positioned(
+                left: screenPosition.dx - 100,
+                top: screenPosition.dy - scaledSize / 2 - 60,
+                child: FadeTransition(
+                  opacity: _longPressGlowAnimation,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    constraints: const BoxConstraints(maxWidth: 200),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.blueAccent.withValues(alpha: 0.6),
+                        width: 2.0,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.blueAccent.withValues(alpha: 0.4),
+                          blurRadius: 12.0,
+                          spreadRadius: 2.0,
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      widget.node.text,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
           ],
         );
       },
@@ -527,11 +591,32 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       ),
     ];
 
+    // Add bluish glow for Android long-press
+    if (_isLongPressing && defaultTargetPlatform == TargetPlatform.android) {
+      final longPressValue = _longPressGlowAnimation.value;
+
+      shadows.add(
+        BoxShadow(
+          color: Colors.blueAccent.withValues(alpha: 0.7 * longPressValue),
+          blurRadius: 20.0 * scale * longPressValue,
+          spreadRadius: 5.0 * scale * longPressValue,
+        ),
+      );
+
+      shadows.add(
+        BoxShadow(
+          color: Colors.blue.withValues(alpha: 0.5 * longPressValue),
+          blurRadius: 35.0 * scale * longPressValue,
+          spreadRadius: 10.0 * scale * longPressValue,
+        ),
+      );
+    }
+
     // Add dramatic glow effects when completed
     if (widget.node.isCompleted) {
       final pulseValue = _pulseAnimation.value;
       final glowValue = _glowAnimation.value;
-      
+
       // Inner bright glow
       shadows.add(
         BoxShadow(
@@ -540,7 +625,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
           spreadRadius: 3.0 * scale * glowValue,
         ),
       );
-      
+
       // Middle glow layer
       shadows.add(
         BoxShadow(
@@ -549,7 +634,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
           spreadRadius: 8.0 * scale * glowValue,
         ),
       );
-      
+
       // Outer dramatic glow
       shadows.add(
         BoxShadow(
@@ -558,7 +643,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
           spreadRadius: 15.0 * scale * glowValue * pulseValue,
         ),
       );
-      
+
       // Subtle white highlight for sparkle effect
       shadows.add(
         BoxShadow(
@@ -644,28 +729,32 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   }
 
   List<Widget> _buildActionButtons(double centerX, double centerY, double scaledSize, double scale) {
-    final buttonSize = 32.0 * scale.clamp(0.8, 1.5);
-    final radius = scaledSize / 2 + buttonSize + 8;
-    
-    // Define button positions around the node (top, right, bottom, left)
-    final buttonPositions = [
-      {'offset': Offset(0, -radius), 'icon': widget.node.isCompleted ? Icons.refresh : Icons.check, 'color': widget.node.isCompleted ? Colors.orange : Colors.green, 'onTap': _handleCompletionTap},
-      {'offset': Offset(radius, 0), 'icon': Icons.link, 'color': Colors.purple, 'onTap': _handleConnectorTap},
-      {'offset': Offset(0, radius), 'icon': Icons.delete, 'color': Colors.red, 'onTap': _handleDeleteTap},
-      {'offset': Offset(-radius, 0), 'icon': Icons.info, 'color': Colors.blue, 'onTap': _handleInfoTap},
+    // Position buttons on the left side of screen (FAB-style)
+    // These will be fixed to the left edge, not relative to node position
+    const leftPadding = 20.0;
+    const buttonSize = 56.0; // Standard FAB size
+    const buttonSpacing = 10.0;
+
+    // Start from bottom-left, similar to right-side FABs
+    // We'll calculate from screen height in the caller
+
+    // Define button data (done/refresh, delete)
+    final buttonData = [
+      {'icon': widget.node.isCompleted ? Icons.refresh : Icons.check, 'color': widget.node.isCompleted ? Colors.orange : Colors.green, 'onTap': _handleCompletionTap, 'heroTag': 'complete_${widget.node.id}'},
+      {'icon': Icons.delete, 'color': Colors.red, 'onTap': _handleDeleteTap, 'heroTag': 'delete_${widget.node.id}'},
     ];
 
-    return buttonPositions.asMap().entries.map((entry) {
+    return buttonData.asMap().entries.map((entry) {
       final index = entry.key;
-      final buttonData = entry.value;
-      final offset = buttonData['offset'] as Offset;
-      final icon = buttonData['icon'] as IconData;
-      final color = buttonData['color'] as Color;
-      final onTap = buttonData['onTap'] as VoidCallback;
-      
+      final data = entry.value;
+      final icon = data['icon'] as IconData;
+      final color = data['color'] as Color;
+      final onTap = data['onTap'] as VoidCallback;
+      final heroTag = data['heroTag'] as String;
+
       return Positioned(
-        left: centerX + offset.dx - buttonSize / 2,
-        top: centerY + offset.dy - buttonSize / 2,
+        left: leftPadding,
+        bottom: 20.0 + (index * (buttonSize + buttonSpacing)),
         child: AnimatedScale(
           scale: 1.0,
           duration: Duration(milliseconds: 300 + (index * 75)),
@@ -674,36 +763,13 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
             opacity: 1.0,
             duration: Duration(milliseconds: 200 + (index * 50)),
             curve: Curves.easeOut,
-            child: GestureDetector(
-              onTap: onTap,
-              child: Container(
-                width: buttonSize,
-                height: buttonSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withValues(alpha: 0.9),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    width: 2.0,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 8.0,
-                      offset: const Offset(0, 2),
-                    ),
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.3),
-                      blurRadius: 12.0,
-                      spreadRadius: 2.0,
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: buttonSize * 0.5,
-                ),
+            child: FloatingActionButton(
+              heroTag: heroTag,
+              onPressed: onTap,
+              backgroundColor: color,
+              child: Icon(
+                icon,
+                color: Colors.white,
               ),
             ),
           ),
