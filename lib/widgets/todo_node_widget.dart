@@ -454,20 +454,24 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                 child: AnimatedBuilder(
                   animation: Listenable.merge([_glowAnimation, _pulseAnimation]),
                   builder: (context, child) {
+                    final bgColor = AppTheme.getNodeBackgroundColor(
+                      widget.node.color,
+                      provider.isDarkMode,
+                      isCompleted: widget.node.isCompleted,
+                    );
+
                     return Container(
                       width: scaledSize,
                       height: scaledSize,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: widget.node.isCompleted 
-                          ? widget.node.color.withValues(alpha: 0.95)
-                          : widget.node.color.withValues(alpha: 0.9),
+                        color: bgColor,
                         border: Border.all(
                           color: _getSelectionColor(),
                           width: _getSelectionWidth() * provider.scale,
                         ),
                         boxShadow: _buildShadows(provider.scale),
-                        gradient: widget.node.isCompleted ? RadialGradient(
+                        gradient: widget.node.isCompleted && provider.isDarkMode ? RadialGradient(
                           colors: [
                             widget.node.color.withValues(alpha: 1.0),
                             widget.node.color.withValues(alpha: 0.7),
@@ -569,73 +573,91 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   }
 
   Widget _buildContent(double scale) {
-    return Stack(
-      children: [
-        // Main icon display
-        Center(
-          child: widget.node.isCompleted
-            ? AnimatedBuilder(
-                animation: _pulseAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: 1.0 + (0.1 * _pulseAnimation.value * _glowAnimation.value),
-                    child: ShaderMask(
-                      shaderCallback: (Rect bounds) {
-                        return LinearGradient(
-                          colors: [
-                            Colors.white.withValues(alpha: 0.9),
-                            Colors.greenAccent.withValues(alpha: 0.7),
-                          ],
-                        ).createShader(bounds);
-                      },
-                      child: Icon(
-                        _getPhosphorIcon(widget.node.icon),
-                        size: 48 * scale.clamp(0.5, 1.2),
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            color: Colors.white.withValues(alpha: 0.5 * _pulseAnimation.value),
-                            blurRadius: 8.0 * _pulseAnimation.value,
-                          ),
-                          Shadow(
-                            color: Colors.greenAccent.withValues(alpha: 0.3 * _pulseAnimation.value),
-                            blurRadius: 12.0 * _pulseAnimation.value,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              )
-            : Icon(
-                _getPhosphorIcon(widget.node.icon),
-                size: 48 * scale.clamp(0.5, 1.2),
-                color: Colors.white,
-              ),
-        ),
-        // Checkmark overlay for completed tasks
-        if (widget.node.isCompleted)
-          Positioned(
-            right: 4,
-            top: 4,
-            child: FadeTransition(
-              opacity: _glowAnimation,
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 14,
-                ),
-              ),
+    return Consumer<CanvasProvider>(
+      builder: (context, provider, child) {
+        final iconColor = AppTheme.getNodeIconColor(provider.isDarkMode);
+
+        return Stack(
+          children: [
+            // Main icon display
+            Center(
+              child: widget.node.isCompleted
+                ? AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: 1.0 + (0.1 * _pulseAnimation.value * _glowAnimation.value),
+                        child: provider.isDarkMode
+                          ? ShaderMask(
+                              shaderCallback: (Rect bounds) {
+                                return LinearGradient(
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.9),
+                                    Colors.greenAccent.withValues(alpha: 0.7),
+                                  ],
+                                ).createShader(bounds);
+                              },
+                              child: Icon(
+                                _getPhosphorIcon(widget.node.icon),
+                                size: 48 * scale.clamp(0.5, 1.2),
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.white.withValues(alpha: 0.5 * _pulseAnimation.value),
+                                    blurRadius: 8.0 * _pulseAnimation.value,
+                                  ),
+                                  Shadow(
+                                    color: Colors.greenAccent.withValues(alpha: 0.3 * _pulseAnimation.value),
+                                    blurRadius: 12.0 * _pulseAnimation.value,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Icon(
+                              _getPhosphorIcon(widget.node.icon),
+                              size: 48 * scale.clamp(0.5, 1.2),
+                              color: iconColor,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.green.withValues(alpha: 0.3 * _pulseAnimation.value),
+                                  blurRadius: 4.0 * _pulseAnimation.value,
+                                ),
+                              ],
+                            ),
+                      );
+                    },
+                  )
+                : Icon(
+                    _getPhosphorIcon(widget.node.icon),
+                    size: 48 * scale.clamp(0.5, 1.2),
+                    color: iconColor,
+                  ),
             ),
-          ),
-      ],
+            // Checkmark overlay for completed tasks
+            if (widget.node.isCompleted)
+              Positioned(
+                right: 4,
+                top: 4,
+                child: FadeTransition(
+                  opacity: _glowAnimation,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

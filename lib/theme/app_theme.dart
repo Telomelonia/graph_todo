@@ -29,6 +29,9 @@ class AppTheme {
   static const Color primaryPurple = Color(0xFF8B5CF6);
   static const Color primaryYellow = Color(0xFFF59E0B);
 
+  // Charcoal color for light mode icons
+  static const Color charcoalIcon = Color(0xFF424242);
+
   // Get colors based on theme mode
   static Color getBackgroundColor(bool isDarkMode) {
     return isDarkMode ? darkBackground : lightBackground;
@@ -128,5 +131,28 @@ class AppTheme {
 
   static Color getIconSelectorHeaderBackground(bool isDarkMode) {
     return isDarkMode ? Colors.black.withValues(alpha: 0.3) : Color(0xFFE8EAF6);
+  }
+
+  // Convert node color to pastel/highlighter version for light mode
+  static Color getNodeBackgroundColor(Color originalColor, bool isDarkMode, {bool isCompleted = false}) {
+    if (isDarkMode) {
+      // Dark mode: keep original colors with high opacity
+      return isCompleted
+        ? originalColor.withValues(alpha: 0.95)
+        : originalColor.withValues(alpha: 0.9);
+    } else {
+      // Light mode: create pastel/highlighter version
+      // Mix with white to create lighter, softer tones
+      final hslColor = HSLColor.fromColor(originalColor);
+      final pastelColor = hslColor.withLightness(0.85).withSaturation(0.6).toColor();
+      return isCompleted
+        ? pastelColor.withValues(alpha: 0.95)
+        : pastelColor.withValues(alpha: 0.9);
+    }
+  }
+
+  // Get icon color for nodes
+  static Color getNodeIconColor(bool isDarkMode) {
+    return isDarkMode ? Colors.white : charcoalIcon;
   }
 }

@@ -454,22 +454,22 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppTheme.getInfoPanelFieldBackground(provider.isDarkMode),
+                                color: AppTheme.getNodeBackgroundColor(_selectedColor, provider.isDarkMode),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppTheme.getBorderColor(provider.isDarkMode)),
+                                border: Border.all(color: _selectedColor.withValues(alpha: 0.5)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
                                     _getPhosphorIcon(_selectedIcon),
-                                    size: 20,
-                                    color: AppTheme.getTextColor(provider.isDarkMode),
+                                    size: 24,
+                                    color: AppTheme.getNodeIconColor(provider.isDarkMode),
                                   ),
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.edit,
-                                    size: 16,
+                                    size: 14,
                                     color: AppTheme.getTextSecondaryColor(provider.isDarkMode),
                                   ),
                                 ],
