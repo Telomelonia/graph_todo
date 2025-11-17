@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/canvas_provider.dart';
+import '../theme/app_theme.dart';
 
 class IconSelectorWidget extends StatefulWidget {
   final String? currentIcon;
@@ -570,6 +573,9 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<CanvasProvider>();
+    final isDarkMode = provider.isDarkMode;
+
     return Container(
       height: 400,
       padding: const EdgeInsets.all(16),
@@ -580,27 +586,27 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
             'Select Icon',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: AppTheme.getTextColor(isDarkMode),
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Search bar
           TextField(
             controller: _searchController,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: AppTheme.getTextColor(isDarkMode)),
             decoration: InputDecoration(
               hintText: 'Search icons (e.g., target, code, heart)...',
-              hintStyle: TextStyle(color: Colors.grey[400]),
-              prefixIcon: const Icon(Icons.search, color: Colors.white),
-              border: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white),
+              hintStyle: TextStyle(color: AppTheme.getTextHintColor(isDarkMode)),
+              prefixIcon: Icon(Icons.search, color: AppTheme.getTextSecondaryColor(isDarkMode)),
+              border: OutlineInputBorder(
+                borderSide: BorderSide(color: AppTheme.getBorderColor(isDarkMode)),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey[600]!),
+                borderSide: BorderSide(color: AppTheme.getBorderColor(isDarkMode)),
               ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: Colors.white, width: 2),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: AppTheme.primaryBlue, width: 2),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
@@ -627,13 +633,13 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
                   onTap: () => widget.onIconSelected(icon),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isSelected 
-                        ? Theme.of(context).primaryColor.withValues(alpha: 0.2)
-                        : Colors.grey.withValues(alpha: 0.1),
+                      color: isSelected
+                        ? AppTheme.primaryBlue.withValues(alpha: isDarkMode ? 0.2 : 0.1)
+                        : (isDarkMode ? Colors.grey.withValues(alpha: 0.1) : AppTheme.lightSurfaceLight),
                       border: Border.all(
-                        color: isSelected 
-                          ? Theme.of(context).primaryColor
-                          : Colors.grey.withValues(alpha: 0.3),
+                        color: isSelected
+                          ? AppTheme.primaryBlue
+                          : AppTheme.getBorderColor(isDarkMode),
                         width: isSelected ? 2 : 1,
                       ),
                       borderRadius: BorderRadius.circular(8),
@@ -642,9 +648,9 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
                       child: Icon(
                         _getPhosphorIcon(icon),
                         size: 24,
-                        color: isSelected 
-                          ? Theme.of(context).primaryColor
-                          : Colors.white,
+                        color: isSelected
+                          ? AppTheme.primaryBlue
+                          : const Color(0xFF424242), // Charcoal color for consistency with node icons
                       ),
                     ),
                   ),
@@ -655,12 +661,12 @@ class _IconSelectorWidgetState extends State<IconSelectorWidget> {
           
           // Footer info
           if (_filteredIcons.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(16),
               child: Center(
                 child: Text(
                   'No icons found. Try a different search term.',
-                  style: TextStyle(color: Colors.white70),
+                  style: TextStyle(color: AppTheme.getTextSecondaryColor(isDarkMode)),
                 ),
               ),
             ),

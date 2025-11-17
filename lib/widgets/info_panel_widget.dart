@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../models/todo_node.dart';
 import '../providers/canvas_provider.dart';
+import '../theme/app_theme.dart';
 import 'icon_selector_widget.dart';
 
 class InfoPanelWidget extends StatefulWidget {
@@ -277,10 +278,11 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
   }
 
   void _showIconSelector() {
+    final provider = context.read<CanvasProvider>();
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF2D2D2D),
+        backgroundColor: AppTheme.getIconSelectorBackground(provider.isDarkMode),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -315,37 +317,39 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
     
     late double panelLeft;
     late double panelTop;
+    late double targetScale;
     late Offset nodeTargetPosition;
-
-    // Use current zoom level instead of fixed target scales
-    final currentScale = provider.scale;
-
+    
     if (isMobile) {
       // Mobile layout: node at top center, panel below
+      targetScale = 1.2;
       nodeTargetPosition = Offset(screenCenter.dx, screenSize.height * 0.25);
       panelLeft = (screenSize.width - panelWidth) / 2;
       panelTop = screenSize.height * 0.45;
     } else {
       // Desktop layout: node on left, panel on right, both centered vertically
+      targetScale = 1.5;
       nodeTargetPosition = Offset(screenSize.width * 0.3, screenCenter.dy);
       panelLeft = screenSize.width * 0.55;
       panelTop = (screenSize.height - panelHeight) / 2;
-
+      
       // Ensure panel doesn't go off screen
       if (panelLeft + panelWidth > screenSize.width - 20) {
         panelLeft = screenSize.width - panelWidth - 20;
       }
     }
-
+    
     // Ensure panel fits on screen
     panelLeft = panelLeft.clamp(20.0, screenSize.width - panelWidth - 20);
     panelTop = panelTop.clamp(20.0, screenSize.height - panelHeight - 20);
-
-    // Auto-adjust view to center node (without changing zoom level)
+    
+    // Auto-adjust view to center node and panel
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final targetPanOffset = nodeTargetPosition - (widget.node.position * currentScale);
-      if ((provider.panOffset - targetPanOffset).distance > 10) {
+      final targetPanOffset = nodeTargetPosition - (widget.node.position * targetScale);
+      if ((provider.panOffset - targetPanOffset).distance > 10 || 
+          (provider.scale - targetScale).abs() > 0.1) {
         provider.updatePanOffset(targetPanOffset - provider.panOffset);
+        provider.updateScale(targetScale);
       }
     });
 
@@ -359,9 +363,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
           width: panelWidth,
           height: panelHeight,
           decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
+            color: AppTheme.getSurfaceColor(provider.isDarkMode),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            border: Border.all(color: AppTheme.getBorderColor(provider.isDarkMode)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,14 +374,14 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
+                  color: AppTheme.getInfoPanelHeaderBackground(provider.isDarkMode),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: AppTheme.getTextColor(provider.isDarkMode),
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -385,7 +389,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       child: Text(
                         widget.node.text.isEmpty ? 'New Task' : widget.node.text,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: AppTheme.getTextColor(provider.isDarkMode),
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -397,7 +401,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       onPressed: _closeAndSave,
                       icon: const Icon(Icons.close),
                       iconSize: 18,
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: AppTheme.getTextSecondaryColor(provider.isDarkMode),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                     ),
@@ -416,7 +420,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       Text(
                         'Title:',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: AppTheme.getTextSecondaryColor(provider.isDarkMode),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -424,27 +428,27 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       const SizedBox(height: 4),
                       TextField(
                         controller: _titleController,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppTheme.getTextColor(provider.isDarkMode),
                           fontSize: 14,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Enter task title...',
                           hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: AppTheme.getTextHintColor(provider.isDarkMode),
                             fontSize: 14,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                            borderSide: BorderSide(color: AppTheme.getBorderColor(provider.isDarkMode)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Colors.blue, width: 2),
+                            borderSide: BorderSide(color: AppTheme.primaryBlue, width: 2),
                           ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           filled: true,
-                          fillColor: Colors.black.withValues(alpha: 0.2),
+                          fillColor: AppTheme.getInfoPanelFieldBackground(provider.isDarkMode),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -455,7 +459,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                           Text(
                             'Icon:',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: AppTheme.getTextSecondaryColor(provider.isDarkMode),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -466,23 +470,23 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.2),
+                                color: AppTheme.getNodeBackgroundColor(_selectedColor, provider.isDarkMode),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                border: Border.all(color: _selectedColor.withValues(alpha: 0.5)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
                                     _getPhosphorIcon(_selectedIcon),
-                                    size: 20,
-                                    color: Colors.white,
+                                    size: 24,
+                                    color: AppTheme.getNodeIconColor(provider.isDarkMode),
                                   ),
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.edit,
-                                    size: 16,
-                                    color: Colors.white.withValues(alpha: 0.6),
+                                    size: 14,
+                                    color: AppTheme.getTextSecondaryColor(provider.isDarkMode),
                                   ),
                                 ],
                               ),
@@ -496,7 +500,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       Text(
                         'Description:',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: AppTheme.getTextSecondaryColor(provider.isDarkMode),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -505,27 +509,27 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       TextField(
                         controller: _descriptionController,
                         maxLines: 4,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppTheme.getTextColor(provider.isDarkMode),
                           fontSize: 14,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Add a description...',
                           hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: AppTheme.getTextHintColor(provider.isDarkMode),
                             fontSize: 14,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                            borderSide: BorderSide(color: AppTheme.getBorderColor(provider.isDarkMode)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Colors.blue, width: 2),
+                            borderSide: BorderSide(color: AppTheme.primaryBlue, width: 2),
                           ),
                           contentPadding: const EdgeInsets.all(10),
                           filled: true,
-                          fillColor: Colors.black.withValues(alpha: 0.2),
+                          fillColor: AppTheme.getInfoPanelFieldBackground(provider.isDarkMode),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -534,7 +538,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       Text(
                         'Color:',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: AppTheme.getTextSecondaryColor(provider.isDarkMode),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -550,8 +554,6 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                               setState(() {
                                 _selectedColor = color;
                               });
-                              // Immediately update the node color for real-time feedback
-                              _provider.updateNodeColor(widget.node.id, color);
                             },
                             child: Container(
                               width: 32,
@@ -586,6 +588,47 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       ),
                     ],
                   ),
+                ),
+              ),
+
+              // Action buttons
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.getInfoPanelHeaderBackground(provider.isDarkMode).withValues(alpha: 0.3),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _saveChanges,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                      child: const Text(
+                        'Save',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => provider.hideNodeInfo(),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: AppTheme.getTextSecondaryColor(provider.isDarkMode),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
