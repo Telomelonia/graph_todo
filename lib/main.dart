@@ -33,8 +33,47 @@ class GraphTodoApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+  bool _isMenuOpen = false;
+  late AnimationController _menuAnimationController;
+  late Animation<double> _menuAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _menuAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _menuAnimation = CurvedAnimation(
+      parent: _menuAnimationController,
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _menuAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleMenu() {
+    setState(() {
+      _isMenuOpen = !_isMenuOpen;
+      if (_isMenuOpen) {
+        _menuAnimationController.forward();
+      } else {
+        _menuAnimationController.reverse();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,115 +83,179 @@ class HomePage extends StatelessWidget {
           backgroundColor: provider.isDarkMode
               ? const Color(0xFF1A1A1A)
               : const Color(0xFFF5F5F5),
-          body: const CanvasWidget(),
-          floatingActionButton: Consumer<CanvasProvider>(
-        builder: (context, provider, child) {
-          // Hide FAB buttons when info panel is open
-          if (provider.isInfoPanelOpen) {
-            return const SizedBox.shrink();
-          }
-
-          return Column(
-            mainAxisSize: MainAxisSize.min,
+          body: Stack(
             children: [
-              // Theme toggle button
-              FloatingActionButton(
-                heroTag: "theme",
-                onPressed: provider.toggleTheme,
-                backgroundColor: provider.isDarkMode
-                    ? Colors.grey[800]
-                    : Colors.grey[300],
-                tooltip: provider.isDarkMode ? 'Light Mode' : 'Dark Mode',
-                child: Icon(
-                  provider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Import button
-              FloatingActionButton(
-                heroTag: "import",
-                onPressed: () => _handleImport(context, provider),
-                backgroundColor: provider.isDarkMode
-                    ? Colors.blue
-                    : const Color(0xFF7DD3FC),
-                tooltip: 'Import Data',
-                child: Icon(
-                  Icons.upload_file,
-                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Export button
-              FloatingActionButton(
-                heroTag: "export",
-                onPressed: () => _handleExport(context, provider),
-                backgroundColor: provider.isDarkMode
-                    ? Colors.orange
-                    : const Color(0xFFFDBA74),
-                tooltip: 'Export Data',
-                child: Icon(
-                  Icons.download,
-                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Add node button
-              FloatingActionButton(
-                heroTag: "addNode",
-                onPressed: provider.toggleAddNodeMode,
-                backgroundColor: provider.isAddNodeMode
-                    ? (provider.isDarkMode ? Colors.grey : const Color(0xFFD1D5DB))
-                    : (provider.isDarkMode ? Colors.green : const Color(0xFF6EE7B7)),
-                tooltip: provider.isAddNodeMode ? 'Cancel' : 'Add Node',
-                child: Icon(
-                  provider.isAddNodeMode
-                      ? Icons.close
-                      : Icons.add,
-                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Clear canvas button
-              FloatingActionButton(
-                heroTag: "clear",
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Clear Canvas'),
-                      content: const Text('Remove all nodes and connections?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            provider.clearCanvas();
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Clear'),
+              const CanvasWidget(),
+              // Menu overlay in bottom right
+              Consumer<CanvasProvider>(
+                builder: (context, provider, child) {
+                  // Hide menu when info panel is open
+                  if (provider.isInfoPanelOpen) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Positioned(
+                    bottom: 20,
+                    right: 20,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Menu items (shown when open)
+                        if (_isMenuOpen) ...[
+                          _buildMenuItem(
+                            icon: provider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                            label: provider.isDarkMode ? 'Light Mode' : 'Dark Mode',
+                            color: provider.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
+                            iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
+                            onTap: provider.toggleTheme,
+                            index: 0,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildMenuItem(
+                            icon: Icons.upload_file,
+                            label: 'Import Data',
+                            color: provider.isDarkMode ? Colors.blue : const Color(0xFF7DD3FC),
+                            iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
+                            onTap: () => _handleImport(context, provider),
+                            index: 1,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildMenuItem(
+                            icon: Icons.download,
+                            label: 'Export Data',
+                            color: provider.isDarkMode ? Colors.orange : const Color(0xFFFDBA74),
+                            iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
+                            onTap: () => _handleExport(context, provider),
+                            index: 2,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildMenuItem(
+                            icon: provider.isAddNodeMode ? Icons.close : Icons.add,
+                            label: provider.isAddNodeMode ? 'Cancel' : 'Add Node',
+                            color: provider.isAddNodeMode
+                                ? (provider.isDarkMode ? Colors.grey : const Color(0xFFD1D5DB))
+                                : (provider.isDarkMode ? Colors.green : const Color(0xFF6EE7B7)),
+                            iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
+                            onTap: provider.toggleAddNodeMode,
+                            index: 3,
+                          ),
+                          const SizedBox(height: 8),
+                          _buildMenuItem(
+                            icon: Icons.clear_all,
+                            label: 'Clear Canvas',
+                            color: provider.isDarkMode ? Colors.red : const Color(0xFFFCA5A5),
+                            iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Clear Canvas'),
+                                  content: const Text('Remove all nodes and connections?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        provider.clearCanvas();
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text('Clear'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            index: 4,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        // Hamburger menu button (always visible)
+                        FloatingActionButton(
+                          heroTag: "menu",
+                          onPressed: _toggleMenu,
+                          backgroundColor: provider.isDarkMode
+                              ? Colors.purple
+                              : const Color(0xFFC4B5FD),
+                          child: AnimatedIcon(
+                            icon: AnimatedIcons.menu_close,
+                            progress: _menuAnimation,
+                            color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
+                          ),
                         ),
                       ],
                     ),
                   );
                 },
-                backgroundColor: provider.isDarkMode
-                    ? Colors.red
-                    : const Color(0xFFFCA5A5),
-                tooltip: 'Clear Canvas',
-                child: Icon(
-                  Icons.clear_all,
-                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
-                ),
               ),
             ],
-          );
-        },
-      ),
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color iconColor,
+    required VoidCallback onTap,
+    required int index,
+  }) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _menuAnimationController,
+          curve: Interval(
+            index * 0.1,
+            0.5 + (index * 0.1),
+            curve: Curves.easeOut,
+          ),
+        ),
+      ),
+      child: FadeTransition(
+        opacity: _menuAnimation,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Label
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: iconColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Icon button
+            FloatingActionButton(
+              heroTag: "menu_$label",
+              mini: true,
+              onPressed: onTap,
+              backgroundColor: color,
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

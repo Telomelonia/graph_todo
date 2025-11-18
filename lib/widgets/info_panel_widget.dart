@@ -55,6 +55,24 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
     _descriptionController = TextEditingController(text: widget.node.description);
     _selectedColor = widget.node.color;
     _selectedIcon = widget.node.icon;
+
+    // Add listeners to save changes immediately when text changes
+    _titleController.addListener(_onTitleChanged);
+    _descriptionController.addListener(_onDescriptionChanged);
+  }
+
+  void _onTitleChanged() {
+    // Save title changes immediately as user types
+    if (_titleController.text != widget.node.text) {
+      _provider.updateNodeText(widget.node.id, _titleController.text.trim().isEmpty ? 'New Task' : _titleController.text);
+    }
+  }
+
+  void _onDescriptionChanged() {
+    // Save description changes immediately as user types
+    if (_descriptionController.text != widget.node.description) {
+      _provider.updateNodeDescription(widget.node.id, _descriptionController.text);
+    }
   }
 
   @override
@@ -65,7 +83,11 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
 
   @override
   void dispose() {
-    // Auto-save changes when widget is disposed (closed by any means)
+    // Remove listeners before disposing
+    _titleController.removeListener(_onTitleChanged);
+    _descriptionController.removeListener(_onDescriptionChanged);
+
+    // Auto-save any final changes when widget is disposed
     _saveChangesWithProvider(_provider);
     _titleController.dispose();
     _descriptionController.dispose();

@@ -5,16 +5,12 @@ import 'package:graph_todo/widgets/icon_selector_widget.dart';
 void main() {
   group('IconSelectorWidget', () {
     testWidgets('renders icon selector correctly', (WidgetTester tester) async {
-      String? selectedIcon;
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: IconSelectorWidget(
               currentIcon: 'target',
-              onIconSelected: (icon) {
-                selectedIcon = icon;
-              },
+              onIconSelected: (icon) {},
             ),
           ),
         ),
