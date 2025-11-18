@@ -38,10 +38,14 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1A1A1A),
-      body: const CanvasWidget(),
-      floatingActionButton: Consumer<CanvasProvider>(
+    return Consumer<CanvasProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          backgroundColor: provider.isDarkMode
+              ? const Color(0xFF1A1A1A)
+              : const Color(0xFFF5F5F5),
+          body: const CanvasWidget(),
+          floatingActionButton: Consumer<CanvasProvider>(
         builder: (context, provider, child) {
           // Hide FAB buttons when info panel is open
           if (provider.isInfoPanelOpen) {
@@ -51,15 +55,31 @@ class HomePage extends StatelessWidget {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Theme toggle button
+              FloatingActionButton(
+                heroTag: "theme",
+                onPressed: provider.toggleTheme,
+                backgroundColor: provider.isDarkMode
+                    ? Colors.grey[800]
+                    : Colors.grey[300],
+                tooltip: provider.isDarkMode ? 'Light Mode' : 'Dark Mode',
+                child: Icon(
+                  provider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
+                ),
+              ),
+              const SizedBox(height: 10),
               // Import button
               FloatingActionButton(
                 heroTag: "import",
                 onPressed: () => _handleImport(context, provider),
-                backgroundColor: Colors.blue,
+                backgroundColor: provider.isDarkMode
+                    ? Colors.blue
+                    : const Color(0xFF7DD3FC),
                 tooltip: 'Import Data',
-                child: const Icon(
+                child: Icon(
                   Icons.upload_file,
-                  color: Colors.white,
+                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                 ),
               ),
               const SizedBox(height: 10),
@@ -67,11 +87,13 @@ class HomePage extends StatelessWidget {
               FloatingActionButton(
                 heroTag: "export",
                 onPressed: () => _handleExport(context, provider),
-                backgroundColor: Colors.orange,
+                backgroundColor: provider.isDarkMode
+                    ? Colors.orange
+                    : const Color(0xFFFDBA74),
                 tooltip: 'Export Data',
-                child: const Icon(
+                child: Icon(
                   Icons.download,
-                  color: Colors.white,
+                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                 ),
               ),
               const SizedBox(height: 10),
@@ -80,14 +102,14 @@ class HomePage extends StatelessWidget {
                 heroTag: "addNode",
                 onPressed: provider.toggleAddNodeMode,
                 backgroundColor: provider.isAddNodeMode
-                    ? Colors.grey
-                    : Colors.green,
+                    ? (provider.isDarkMode ? Colors.grey : const Color(0xFFD1D5DB))
+                    : (provider.isDarkMode ? Colors.green : const Color(0xFF6EE7B7)),
                 tooltip: provider.isAddNodeMode ? 'Cancel' : 'Add Node',
                 child: Icon(
                   provider.isAddNodeMode
                       ? Icons.close
                       : Icons.add,
-                  color: Colors.white,
+                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                 ),
               ),
               const SizedBox(height: 10),
@@ -116,17 +138,21 @@ class HomePage extends StatelessWidget {
                     ),
                   );
                 },
-                backgroundColor: Colors.red,
+                backgroundColor: provider.isDarkMode
+                    ? Colors.red
+                    : const Color(0xFFFCA5A5),
                 tooltip: 'Clear Canvas',
-                child: const Icon(
+                child: Icon(
                   Icons.clear_all,
-                  color: Colors.white,
+                  color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                 ),
               ),
             ],
           );
         },
       ),
+        );
+      },
     );
   }
 
@@ -359,6 +385,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                   painter: GridPainter(
                     scale: provider.scale,
                     panOffset: provider.panOffset,
+                    isDarkMode: provider.isDarkMode,
                   ),
                   size: Size.infinite,
                 ),
@@ -370,6 +397,7 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     nodes: provider.nodes,
                     scale: provider.scale,
                     panOffset: provider.panOffset,
+                    isDarkMode: provider.isDarkMode,
                   ),
                   size: Size.infinite,
                 ),
@@ -447,13 +475,15 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.9),
+                        color: provider.isDarkMode
+                            ? Colors.grey.withValues(alpha: 0.9)
+                            : Colors.grey.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Click anywhere to add a new node',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -468,13 +498,15 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.9),
+                        color: provider.isDarkMode
+                            ? Colors.red.withValues(alpha: 0.9)
+                            : const Color(0xFFFCA5A5).withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Click any node to delete it',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -489,13 +521,21 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
+                        color: provider.isDarkMode
+                            ? Colors.black.withValues(alpha: 0.7)
+                            : Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(12),
+                        border: provider.isDarkMode
+                            ? null
+                            : Border.all(
+                                color: Colors.grey.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Scroll wheel: zoom • Drag: pan',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                           fontSize: 11,
                         ),
                       ),
@@ -509,17 +549,21 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
+                      color: provider.isDarkMode
+                          ? Colors.black.withValues(alpha: 0.7)
+                          : Colors.white.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: provider.isDarkMode
+                            ? Colors.white.withValues(alpha: 0.2)
+                            : Colors.grey.withValues(alpha: 0.3),
                         width: 1,
                       ),
                     ),
                     child: Text(
                       'Zoom: ${(provider.scale * 100).toInt()}%',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -541,22 +585,31 @@ class _CanvasWidgetState extends State<CanvasWidget> {
 class GridPainter extends CustomPainter {
   final double scale;
   final Offset panOffset;
+  final bool isDarkMode;
 
-  GridPainter({required this.scale, required this.panOffset});
+  GridPainter({
+    required this.scale,
+    required this.panOffset,
+    required this.isDarkMode,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     const gridSize = 50.0;
     const smallGridSize = 10.0; // Smaller grid for high zoom levels
 
-    // Main grid paint (normal opacity)
+    // Main grid paint (theme-aware)
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.1)
+      ..color = isDarkMode
+          ? Colors.white.withValues(alpha: 0.1)
+          : Colors.grey.withValues(alpha: 0.15)
       ..strokeWidth = 1.0;
 
-    // Small grid paint (slightly more subtle)
+    // Small grid paint (slightly more subtle, theme-aware)
     final smallPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.05)
+      ..color = isDarkMode
+          ? Colors.white.withValues(alpha: 0.05)
+          : Colors.grey.withValues(alpha: 0.08)
       ..strokeWidth = 0.5;
 
     // Draw main grid (always visible above 30% zoom)
@@ -594,6 +647,8 @@ class GridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(GridPainter oldDelegate) {
-    return scale != oldDelegate.scale || panOffset != oldDelegate.panOffset;
+    return scale != oldDelegate.scale ||
+        panOffset != oldDelegate.panOffset ||
+        isDarkMode != oldDelegate.isDarkMode;
   }
 }

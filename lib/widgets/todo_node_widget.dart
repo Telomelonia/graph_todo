@@ -494,7 +494,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                           stops: const [0.0, 0.7, 0.85, 1.0],
                         ) : null,
                       ),
-                      child: _buildContent(provider.scale),
+                      child: _buildContent(provider.scale, provider.isDarkMode),
                     );
                   },
                 ),
@@ -502,7 +502,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
             ),
             // Action buttons (separate from node gesture detector)
             if (provider.nodeWithActiveButtons == widget.node.id)
-              ..._buildActionButtons(screenPosition.dx, screenPosition.dy, scaledSize, provider.scale),
+              ..._buildActionButtons(screenPosition.dx, screenPosition.dy, scaledSize, provider.scale, provider.isDarkMode),
             // Title display for Android long-press
             if (_isLongPressing && defaultTargetPlatform == TargetPlatform.android && widget.node.text.isNotEmpty)
               Positioned(
@@ -672,11 +672,14 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     return shadows;
   }
 
-  Widget _buildContent(double scale) {
+  Widget _buildContent(double scale, bool isDarkMode) {
     // Calculate icon size as a fixed proportion of scaled node size (40% of node diameter)
     // Icon scales with zoom just like the node does, maintaining consistent proportion
     final scaledSize = widget.node.size * scale;
     final iconSize = scaledSize * 0.4;
+
+    // Theme-aware icon color for better contrast on highlighter tones in light mode
+    final iconColor = isDarkMode ? Colors.white : const Color(0xFF333333);
 
     return Stack(
       children: [
@@ -692,7 +695,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                       shaderCallback: (Rect bounds) {
                         return LinearGradient(
                           colors: [
-                            Colors.white.withValues(alpha: 0.9),
+                            iconColor.withValues(alpha: 0.9),
                             Colors.greenAccent.withValues(alpha: 0.7),
                           ],
                         ).createShader(bounds);
@@ -700,10 +703,10 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                       child: Icon(
                         _getPhosphorIcon(widget.node.icon),
                         size: iconSize,
-                        color: Colors.white,
+                        color: iconColor,
                         shadows: [
                           Shadow(
-                            color: Colors.white.withValues(alpha: 0.5 * _pulseAnimation.value),
+                            color: iconColor.withValues(alpha: 0.5 * _pulseAnimation.value),
                             blurRadius: 8.0 * _pulseAnimation.value,
                           ),
                           Shadow(
@@ -719,7 +722,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
             : Icon(
                 _getPhosphorIcon(widget.node.icon),
                 size: iconSize,
-                color: Colors.white,
+                color: iconColor,
               ),
         ),
         // Checkmark overlay for completed tasks
@@ -748,7 +751,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     );
   }
 
-  List<Widget> _buildActionButtons(double centerX, double centerY, double scaledSize, double scale) {
+  List<Widget> _buildActionButtons(double centerX, double centerY, double scaledSize, double scale, bool isDarkMode) {
     // Position buttons on the left side of screen (FAB-style)
     // These will be fixed to the left edge, not relative to node position
     const leftPadding = 20.0;
@@ -758,11 +761,22 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     // Start from bottom-left, similar to right-side FABs
     // We'll calculate from screen height in the caller
 
+    // Theme-aware colors for action buttons
+    final completionColor = widget.node.isCompleted
+        ? (isDarkMode ? Colors.orange : const Color(0xFFFDBA74))
+        : (isDarkMode ? Colors.green : const Color(0xFF6EE7B7));
+
+    // Eye-soothing link color: soft teal/cyan instead of yellow
+    final linkColor = isDarkMode ? const Color(0xFF5EEAD4) : const Color(0xFF2DD4BF);
+
+    final deleteColor = isDarkMode ? Colors.red : const Color(0xFFFCA5A5);
+    final iconColor = isDarkMode ? Colors.white : const Color(0xFF333333);
+
     // Define button data (done/refresh, connect, delete)
     final buttonData = [
-      {'icon': widget.node.isCompleted ? Icons.refresh : Icons.check, 'color': widget.node.isCompleted ? Colors.orange : Colors.green, 'onTap': _handleCompletionTap, 'heroTag': 'complete_${widget.node.id}'},
-      {'icon': Icons.link, 'color': Colors.yellow, 'onTap': _handleConnectorTap, 'heroTag': 'connect_${widget.node.id}'},
-      {'icon': Icons.delete, 'color': Colors.red, 'onTap': _handleDeleteTap, 'heroTag': 'delete_${widget.node.id}'},
+      {'icon': widget.node.isCompleted ? Icons.refresh : Icons.check, 'color': completionColor, 'onTap': _handleCompletionTap, 'heroTag': 'complete_${widget.node.id}'},
+      {'icon': Icons.link, 'color': linkColor, 'onTap': _handleConnectorTap, 'heroTag': 'connect_${widget.node.id}'},
+      {'icon': Icons.delete, 'color': deleteColor, 'onTap': _handleDeleteTap, 'heroTag': 'delete_${widget.node.id}'},
     ];
 
     return buttonData.asMap().entries.map((entry) {
@@ -790,7 +804,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
               backgroundColor: color,
               child: Icon(
                 icon,
-                color: Colors.white,
+                color: iconColor,
               ),
             ),
           ),

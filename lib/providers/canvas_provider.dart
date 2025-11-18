@@ -22,7 +22,9 @@ class CanvasProvider with ChangeNotifier {
   String? _newlyCreatedNodeId; // Track newly created node for immediate editing
   String? _nodeShowingInfo; // Track which node is showing info panel
   String? _nodeWithActiveButtons; // Track which node has active action buttons
-  
+
+  // Theme state
+  bool _isDarkMode = true; // Default to dark mode
 
   // Getters
   List<TodoNode> get nodes => List.unmodifiable(_nodes);
@@ -38,6 +40,7 @@ class CanvasProvider with ChangeNotifier {
   String? get nodeShowingInfo => _nodeShowingInfo;
   bool get isInfoPanelOpen => _nodeShowingInfo != null;
   String? get nodeWithActiveButtons => _nodeWithActiveButtons;
+  bool get isDarkMode => _isDarkMode;
 
 
   // Add a new node at the given position with immediate editing and zoom
@@ -54,11 +57,17 @@ class CanvasProvider with ChangeNotifier {
     // This keeps the visual size consistent on screen
     final canvasRelativeSize = baseSize / _scale;
 
+    // Theme-aware default color
+    final defaultColor = _isDarkMode
+        ? const Color(0xFF6366F1) // Dark mode: Indigo
+        : const Color(0xFFA5B4FC); // Light mode: Light Indigo
+
     final node = TodoNode(
       id: _uuid.v4(),
       text: text.isEmpty ? '' : text, // Start with empty text for immediate editing
       position: position,
       size: canvasRelativeSize,
+      color: defaultColor,
     );
     _nodes.add(node);
     _newlyCreatedNodeId = node.id; // Mark as newly created for immediate editing
@@ -283,6 +292,54 @@ class CanvasProvider with ChangeNotifier {
   void exitEraserMode() {
     _isEraserMode = false;
     notifyListeners();
+  }
+
+  // Theme management
+  void toggleTheme() {
+    _isDarkMode = !_isDarkMode;
+
+    // Convert all existing node colors to match the new theme
+    _convertNodeColorsForTheme();
+
+    notifyListeners();
+  }
+
+  // Map colors between dark and light themes
+  void _convertNodeColorsForTheme() {
+    // Color mappings: Dark mode -> Light mode
+    final Map<int, int> darkToLight = {
+      0xFF6366F1: 0xFFA5B4FC, // Indigo -> Light Indigo
+      0xFFEF4444: 0xFFFCA5A5, // Red -> Light Red
+      0xFFF59E0B: 0xFFFDE68A, // Yellow -> Light Yellow
+      0xFF3B82F6: 0xFF93C5FD, // Blue -> Light Blue
+      0xFF8B5CF6: 0xFFC4B5FD, // Purple -> Light Purple
+      0xFFEC4899: 0xFFF9A8D4, // Pink -> Light Pink
+      0xFFF97316: 0xFFFDBA74, // Orange -> Light Orange
+      0xFF06B6D4: 0xFFA5F3FC, // Cyan -> Light Cyan
+    };
+
+    // Create reverse mapping: Light mode -> Dark mode
+    final Map<int, int> lightToDark = {};
+    darkToLight.forEach((dark, light) {
+      lightToDark[light] = dark;
+    });
+
+    // Convert colors for all nodes
+    for (var node in _nodes) {
+      final currentColorValue = node.color.toARGB32();
+
+      if (_isDarkMode) {
+        // Switching to dark mode: convert light colors to dark
+        if (lightToDark.containsKey(currentColorValue)) {
+          node.color = Color(lightToDark[currentColorValue]!);
+        }
+      } else {
+        // Switching to light mode: convert dark colors to light
+        if (darkToLight.containsKey(currentColorValue)) {
+          node.color = Color(darkToLight[currentColorValue]!);
+        }
+      }
+    }
   }
 
   // Handle node selection for connection

@@ -13,6 +13,7 @@ class ConnectionPainter extends CustomPainter {
   final double animationValue;
   final String? hoveredConnectionId;
   final VoidCallback? onConnectionDelete;
+  final bool isDarkMode;
 
   ConnectionPainter({
     required this.connections,
@@ -24,6 +25,7 @@ class ConnectionPainter extends CustomPainter {
     this.animationValue = 0.0,
     this.hoveredConnectionId,
     this.onConnectionDelete,
+    this.isDarkMode = true,
   });
 
   @override
@@ -154,7 +156,10 @@ class ConnectionPainter extends CustomPainter {
       _drawChargingConnection(canvas, connectionPoints, connection, scale);
       return;
     } else {
-      paint.color = Colors.white.withValues(alpha: 0.6);
+      // Theme-aware default connection color
+      paint.color = isDarkMode
+          ? Colors.white.withValues(alpha: 0.6)
+          : const Color(0xFF9CA3AF).withValues(alpha: 0.6);
     }
 
     // Draw the main connection line
@@ -332,7 +337,8 @@ class ConnectionPainter extends CustomPainter {
         isConnectMode != oldDelegate.isConnectMode ||
         selectedNodeForConnection != oldDelegate.selectedNodeForConnection ||
         animationValue != oldDelegate.animationValue ||
-        hoveredConnectionId != oldDelegate.hoveredConnectionId;
+        hoveredConnectionId != oldDelegate.hoveredConnectionId ||
+        isDarkMode != oldDelegate.isDarkMode;
   }
 }
 

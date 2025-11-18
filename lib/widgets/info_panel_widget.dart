@@ -24,18 +24,28 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
   late String _selectedIcon;
   late CanvasProvider _provider;
 
-  // Predefined color options
-  final List<Color> _colorOptions = [
+  // Dark mode color options (Green and Lime removed)
+  final List<Color> _darkColorOptions = [
     const Color(0xFF6366F1), // Indigo (default)
     const Color(0xFFEF4444), // Red
-    const Color(0xFF10B981), // Green
     const Color(0xFFF59E0B), // Yellow
     const Color(0xFF3B82F6), // Blue
     const Color(0xFF8B5CF6), // Purple
     const Color(0xFFEC4899), // Pink
     const Color(0xFFF97316), // Orange
     const Color(0xFF06B6D4), // Cyan
-    const Color(0xFF84CC16), // Lime
+  ];
+
+  // Light mode color options (highlighter tones, Green and Lime removed)
+  final List<Color> _lightColorOptions = [
+    const Color(0xFFA5B4FC), // Light Indigo
+    const Color(0xFFFCA5A5), // Light Red
+    const Color(0xFFFDE68A), // Light Yellow
+    const Color(0xFF93C5FD), // Light Blue
+    const Color(0xFFC4B5FD), // Light Purple
+    const Color(0xFFF9A8D4), // Light Pink
+    const Color(0xFFFDBA74), // Light Orange
+    const Color(0xFFA5F3FC), // Light Cyan
   ];
 
   @override
@@ -359,9 +369,15 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
           width: panelWidth,
           height: panelHeight,
           decoration: BoxDecoration(
-            color: const Color(0xFF2D2D2D),
+            color: provider.isDarkMode
+                ? const Color(0xFF2D2D2D)
+                : const Color(0xFFF0F0F0),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: provider.isDarkMode
+                  ? Colors.white.withValues(alpha: 0.2)
+                  : Colors.grey.withValues(alpha: 0.3),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,14 +386,18 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.3),
+                  color: provider.isDarkMode
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : Colors.white.withValues(alpha: 0.5),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: provider.isDarkMode
+                          ? Colors.white.withValues(alpha: 0.9)
+                          : const Color(0xFF333333),
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -385,7 +405,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       child: Text(
                         widget.node.text.isEmpty ? 'New Task' : widget.node.text,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: provider.isDarkMode
+                              ? Colors.white.withValues(alpha: 0.9)
+                              : const Color(0xFF333333),
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -397,7 +419,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       onPressed: _closeAndSave,
                       icon: const Icon(Icons.close),
                       iconSize: 18,
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: provider.isDarkMode
+                          ? Colors.white.withValues(alpha: 0.7)
+                          : const Color(0xFF666666),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                     ),
@@ -416,7 +440,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       Text(
                         'Title:',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: provider.isDarkMode
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : const Color(0xFF333333),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -424,19 +450,25 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       const SizedBox(height: 4),
                       TextField(
                         controller: _titleController,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                           fontSize: 14,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Enter task title...',
                           hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: provider.isDarkMode
+                                ? Colors.white.withValues(alpha: 0.4)
+                                : Colors.grey.withValues(alpha: 0.6),
                             fontSize: 14,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                            borderSide: BorderSide(
+                              color: provider.isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.3)
+                                  : Colors.grey.withValues(alpha: 0.4),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -444,7 +476,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                           ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           filled: true,
-                          fillColor: Colors.black.withValues(alpha: 0.2),
+                          fillColor: provider.isDarkMode
+                              ? Colors.black.withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -455,7 +489,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                           Text(
                             'Icon:',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: provider.isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.8)
+                                  : const Color(0xFF333333),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -466,9 +502,15 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.2),
+                                color: provider.isDarkMode
+                                    ? Colors.black.withValues(alpha: 0.2)
+                                    : Colors.white.withValues(alpha: 0.8),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                                border: Border.all(
+                                  color: provider.isDarkMode
+                                      ? Colors.white.withValues(alpha: 0.3)
+                                      : Colors.grey.withValues(alpha: 0.4),
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -476,13 +518,17 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                                   Icon(
                                     _getPhosphorIcon(_selectedIcon),
                                     size: 20,
-                                    color: Colors.white,
+                                    color: provider.isDarkMode
+                                        ? Colors.white
+                                        : const Color(0xFF333333),
                                   ),
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.edit,
                                     size: 16,
-                                    color: Colors.white.withValues(alpha: 0.6),
+                                    color: provider.isDarkMode
+                                        ? Colors.white.withValues(alpha: 0.6)
+                                        : Colors.grey.withValues(alpha: 0.7),
                                   ),
                                 ],
                               ),
@@ -496,7 +542,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       Text(
                         'Description:',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: provider.isDarkMode
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : const Color(0xFF333333),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -505,19 +553,25 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       TextField(
                         controller: _descriptionController,
                         maxLines: 4,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                           fontSize: 14,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Add a description...',
                           hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: provider.isDarkMode
+                                ? Colors.white.withValues(alpha: 0.4)
+                                : Colors.grey.withValues(alpha: 0.6),
                             fontSize: 14,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                            borderSide: BorderSide(
+                              color: provider.isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.3)
+                                  : Colors.grey.withValues(alpha: 0.4),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -525,7 +579,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                           ),
                           contentPadding: const EdgeInsets.all(10),
                           filled: true,
-                          fillColor: Colors.black.withValues(alpha: 0.2),
+                          fillColor: provider.isDarkMode
+                              ? Colors.black.withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -534,7 +590,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       Text(
                         'Color:',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: provider.isDarkMode
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : const Color(0xFF333333),
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -543,7 +601,10 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       Wrap(
                         spacing: 6,
                         runSpacing: 6,
-                        children: _colorOptions.map((color) {
+                        children: (provider.isDarkMode
+                                ? _darkColorOptions
+                                : _lightColorOptions)
+                            .map((color) {
                           final isSelected = _selectedColor == color;
                           return GestureDetector(
                             onTap: () {
