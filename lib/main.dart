@@ -8,8 +8,15 @@ import 'widgets/connection_painter.dart';
 import 'widgets/interactive_connection_widget.dart';
 import 'widgets/connection_endpoint_widget.dart';
 import 'widgets/info_panel_widget.dart';
+import 'services/hive_storage_service.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive storage service
+  await HiveStorageService.initialize();
+
   runApp(const GraphTodoApp());
 }
 
@@ -40,7 +47,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   bool _isMenuOpen = false;
   late AnimationController _menuAnimationController;
   late Animation<double> _menuAnimation;
@@ -56,12 +63,26 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       parent: _menuAnimationController,
       curve: Curves.easeOut,
     );
+    // Add lifecycle observer to save data on app pause/background
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
     _menuAnimationController.dispose();
+    // Remove lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Save data when app goes to background or becomes inactive
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      final provider = context.read<CanvasProvider>();
+      provider.saveToStorage();
+    }
   }
 
   void _toggleMenu() {

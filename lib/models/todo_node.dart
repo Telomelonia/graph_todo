@@ -1,13 +1,32 @@
 import 'dart:ui';
+import 'package:hive/hive.dart';
 
+part 'todo_node.g.dart';
+
+@HiveType(typeId: 0)
 class TodoNode {
+  @HiveField(0)
   final String id;
+
+  @HiveField(1)
   String text;
+
+  @HiveField(2)
   String description;
+
+  @HiveField(3)
   String icon;
+
+  @HiveField(4)
   Offset position;
+
+  @HiveField(5)
   bool isCompleted;
+
+  @HiveField(6)
   Color color;
+
+  @HiveField(7)
   double size;
 
   TodoNode({

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/todo_node.dart';
 import '../models/connection.dart';
 import '../services/data_service.dart';
+import '../services/hive_storage_service.dart';
 
 class CanvasProvider with ChangeNotifier {
   final List<TodoNode> _nodes = [];
@@ -25,6 +27,23 @@ class CanvasProvider with ChangeNotifier {
 
   // Theme state
   bool _isDarkMode = true; // Default to dark mode
+
+  // Auto-save state
+  Timer? _autoSaveTimer;
+  bool _isDirty = false; // Track if data needs saving
+  static const Duration _autoSaveInterval = Duration(seconds: 3);
+
+  // Constructor - initialize and load data
+  CanvasProvider() {
+    _initializeAndLoadData();
+    _startAutoSaveTimer();
+  }
+
+  @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
+  }
 
   // Getters
   List<TodoNode> get nodes => List.unmodifiable(_nodes);
@@ -77,7 +96,8 @@ class CanvasProvider with ChangeNotifier {
 
     // Auto-exit add node mode after creating a node
     exitAddNodeMode();
-    
+
+    _markDirty(); // Mark data as changed
     notifyListeners();
   }
 
@@ -117,6 +137,7 @@ class CanvasProvider with ChangeNotifier {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
     if (index != -1) {
       _nodes[index] = _nodes[index].copyWith(text: newText);
+      _markDirty();
       notifyListeners();
     }
   }
@@ -126,6 +147,7 @@ class CanvasProvider with ChangeNotifier {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
     if (index != -1) {
       _nodes[index] = _nodes[index].copyWith(position: newPosition);
+      _markDirty();
       notifyListeners();
     }
   }
@@ -143,8 +165,9 @@ class CanvasProvider with ChangeNotifier {
       if (!wasCompleted && _nodes[index].isCompleted) {
         _startChargingAnimations(nodeId);
       }
-      
+
       _updateConnectionStates();
+      _markDirty();
       notifyListeners();
     }
   }
@@ -211,17 +234,20 @@ class CanvasProvider with ChangeNotifier {
     _connections.removeWhere(
           (conn) => conn.fromNodeId == nodeId || conn.toNodeId == nodeId,
     );
+    _markDirty();
     notifyListeners();
   }
 
   // Canvas pan and zoom
   void updatePanOffset(Offset delta) {
     _panOffset += delta;
+    _markDirty();
     notifyListeners();
   }
 
   void updateScale(double newScale) {
     _scale = newScale.clamp(0.3, 10.0);
+    _markDirty();
     notifyListeners();
   }
 
@@ -235,6 +261,7 @@ class CanvasProvider with ChangeNotifier {
       _scale = newScale;
       final newFocalPointScreen = canvasToScreen(focalPointCanvas);
       _panOffset += focalPoint - newFocalPointScreen;
+      _markDirty();
       notifyListeners();
     }
   }
@@ -249,6 +276,7 @@ class CanvasProvider with ChangeNotifier {
       _scale = clampedScale;
       final newFocalPointScreen = canvasToScreen(focalPointCanvas);
       _panOffset += focalPoint - newFocalPointScreen;
+      _markDirty();
       notifyListeners();
     }
   }
@@ -386,6 +414,7 @@ class CanvasProvider with ChangeNotifier {
     if (!exists) {
       _connections.add(newConnection);
       _updateConnectionStates();
+      _markDirty();
       notifyListeners();
     }
   }
@@ -393,6 +422,7 @@ class CanvasProvider with ChangeNotifier {
   // Remove a specific connection by ID
   void removeConnection(String connectionId) {
     _connections.removeWhere((conn) => conn.id == connectionId);
+    _markDirty();
     notifyListeners();
   }
 
@@ -423,6 +453,7 @@ class CanvasProvider with ChangeNotifier {
           toNodeId: newToNodeId,
         );
         _updateConnectionStates();
+        _markDirty();
         notifyListeners();
       }
     }
@@ -480,6 +511,7 @@ class CanvasProvider with ChangeNotifier {
     _selectedNodeForConnection = null;
     _draggedNode = null;
     _nodeWithActiveButtons = null;
+    _markDirty();
     notifyListeners();
   }
 
@@ -505,6 +537,7 @@ class CanvasProvider with ChangeNotifier {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
     if (index != -1) {
       _nodes[index] = _nodes[index].copyWith(description: newDescription);
+      _markDirty();
       notifyListeners();
     }
   }
@@ -514,6 +547,7 @@ class CanvasProvider with ChangeNotifier {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
     if (index != -1) {
       _nodes[index] = _nodes[index].copyWith(color: newColor);
+      _markDirty();
       notifyListeners();
     }
   }
@@ -523,6 +557,7 @@ class CanvasProvider with ChangeNotifier {
     final index = _nodes.indexWhere((node) => node.id == nodeId);
     if (index != -1) {
       _nodes[index] = _nodes[index].copyWith(icon: newIcon);
+      _markDirty();
       notifyListeners();
     }
   }
@@ -616,6 +651,76 @@ class CanvasProvider with ChangeNotifier {
     _updateConnectionStates();
 
     notifyListeners();
+  }
+
+  // Initialize and load data from Hive on startup
+  Future<void> _initializeAndLoadData() async {
+    try {
+      // Load nodes from Hive
+      final savedNodes = HiveStorageService.loadNodes();
+      if (savedNodes.isNotEmpty) {
+        _nodes.clear();
+        _nodes.addAll(savedNodes);
+      }
+
+      // Load connections from Hive
+      final savedConnections = HiveStorageService.loadConnections();
+      if (savedConnections.isNotEmpty) {
+        _connections.clear();
+        _connections.addAll(savedConnections);
+        _updateConnectionStates();
+      }
+
+      // Load canvas state from Hive
+      final canvasState = HiveStorageService.loadCanvasState();
+      _scale = canvasState['scale'] ?? 1.0;
+      _panOffset = Offset(
+        canvasState['panX'] ?? 0.0,
+        canvasState['panY'] ?? 0.0,
+      );
+
+      // Notify listeners to update UI
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading data from Hive: $e');
+      // Continue with empty state if loading fails
+    }
+  }
+
+  // Start the auto-save timer
+  void _startAutoSaveTimer() {
+    _autoSaveTimer = Timer.periodic(_autoSaveInterval, (_) {
+      if (_isDirty) {
+        _saveToHive();
+      }
+    });
+  }
+
+  // Mark data as dirty (needs saving)
+  void _markDirty() {
+    _isDirty = true;
+  }
+
+  // Save data to Hive
+  Future<void> _saveToHive() async {
+    try {
+      await HiveStorageService.saveAllData(
+        nodes: _nodes,
+        connections: _connections,
+        scale: _scale,
+        panX: _panOffset.dx,
+        panY: _panOffset.dy,
+      );
+      _isDirty = false;
+      debugPrint('Auto-saved to Hive: ${_nodes.length} nodes, ${_connections.length} connections');
+    } catch (e) {
+      debugPrint('Error saving to Hive: $e');
+    }
+  }
+
+  // Public method to force save (called on app pause/background)
+  Future<void> saveToStorage() async {
+    await _saveToHive();
   }
 }
 

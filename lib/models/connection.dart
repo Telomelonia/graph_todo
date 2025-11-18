@@ -1,10 +1,28 @@
+import 'package:hive/hive.dart';
+
+part 'connection.g.dart';
+
+@HiveType(typeId: 1)
 class Connection {
+  @HiveField(0)
   final String id;
+
+  @HiveField(1)
   final String fromNodeId;
+
+  @HiveField(2)
   final String toNodeId;
+
+  @HiveField(3)
   bool isGreen;
+
+  @HiveField(4)
   bool isCharging;
+
+  @HiveField(5)
   double chargingProgress;
+
+  @HiveField(6)
   String? chargingFromNodeId; // ID of the node that is charging (the completed one)
 
   Connection({
