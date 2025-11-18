@@ -25,13 +25,14 @@ class TodoNodeAdapter extends TypeAdapter<TodoNode> {
       isCompleted: fields[5] as bool,
       color: fields[6] as Color,
       size: fields[7] as double,
+      dueDate: fields[8] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TodoNode obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class TodoNodeAdapter extends TypeAdapter<TodoNode> {
       ..writeByte(6)
       ..write(obj.color)
       ..writeByte(7)
-      ..write(obj.size);
+      ..write(obj.size)
+      ..writeByte(8)
+      ..write(obj.dueDate);
   }
 
   @override

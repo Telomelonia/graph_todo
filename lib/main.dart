@@ -8,6 +8,7 @@ import 'widgets/connection_painter.dart';
 import 'widgets/interactive_connection_widget.dart';
 import 'widgets/connection_endpoint_widget.dart';
 import 'widgets/info_panel_widget.dart';
+import 'widgets/ordered_todo_list_widget.dart';
 import 'services/hive_storage_service.dart';
 
 void main() async {
@@ -693,6 +694,46 @@ class _CanvasWidgetState extends State<CanvasWidget> {
                     ),
                   ),
                 ),
+
+                // Info button (top right) - show ordered todo list
+                if (!provider.isInfoPanelOpen)
+                  Positioned(
+                    top: 20,
+                    right: 20,
+                    child: GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) => ChangeNotifierProvider.value(
+                            value: provider,
+                            child: const OrderedTodoListWidget(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: provider.isDarkMode
+                              ? Colors.black.withValues(alpha: 0.7)
+                              : Colors.white.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: provider.isDarkMode
+                                ? Colors.white.withValues(alpha: 0.2)
+                                : Colors.grey.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.info_outline,
+                          color: provider.isDarkMode
+                              ? Colors.white.withValues(alpha: 0.9)
+                              : const Color(0xFF333333),
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
 
               ],
             ),

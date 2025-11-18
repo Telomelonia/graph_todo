@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:intl/intl.dart';
 import '../models/todo_node.dart';
 import '../providers/canvas_provider.dart';
 import 'icon_selector_widget.dart';
@@ -22,6 +23,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
   late TextEditingController _descriptionController;
   late Color _selectedColor;
   late String _selectedIcon;
+  late DateTime? _selectedDueDate;
   late CanvasProvider _provider;
 
   // Dark mode color options (Green and Lime removed)
@@ -55,6 +57,7 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
     _descriptionController = TextEditingController(text: widget.node.description);
     _selectedColor = widget.node.color;
     _selectedIcon = widget.node.icon;
+    _selectedDueDate = widget.node.dueDate;
 
     // Add listeners to save changes immediately when text changes
     _titleController.addListener(_onTitleChanged);
@@ -294,6 +297,56 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
     if (_selectedColor != widget.node.color) {
       provider.updateNodeColor(widget.node.id, _selectedColor);
     }
+
+    // Update due date if changed
+    if (_selectedDueDate != widget.node.dueDate) {
+      provider.updateNodeDueDate(widget.node.id, _selectedDueDate);
+    }
+  }
+
+  Future<void> _selectDueDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDueDate != null && _selectedDueDate!.isAfter(today)
+          ? _selectedDueDate!
+          : today,
+      firstDate: today,
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+      builder: (context, child) {
+        return Theme(
+          data: _provider.isDarkMode
+              ? ThemeData.dark().copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: Color(0xFF6366F1),
+                    surface: Color(0xFF2D2D2D),
+                  ),
+                )
+              : ThemeData.light().copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: Color(0xFF6366F1),
+                  ),
+                ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDueDate = picked;
+      });
+      _provider.updateNodeDueDate(widget.node.id, picked);
+    }
+  }
+
+  void _clearDueDate() {
+    setState(() {
+      _selectedDueDate = null;
+    });
+    _provider.updateNodeDueDate(widget.node.id, null);
   }
 
   void _saveChanges() {
@@ -505,55 +558,154 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // Icon selector
+                      // Icon selector and Due Date
                       Row(
                         children: [
-                          Text(
-                            'Icon:',
-                            style: TextStyle(
-                              color: provider.isDarkMode
-                                  ? Colors.white.withValues(alpha: 0.8)
-                                  : const Color(0xFF333333),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                          // Icon selector
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Icon:',
+                                  style: TextStyle(
+                                    color: provider.isDarkMode
+                                        ? Colors.white.withValues(alpha: 0.8)
+                                        : const Color(0xFF333333),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () => _showIconSelector(),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: provider.isDarkMode
+                                          ? Colors.black.withValues(alpha: 0.2)
+                                          : Colors.white.withValues(alpha: 0.8),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: provider.isDarkMode
+                                            ? Colors.white.withValues(alpha: 0.3)
+                                            : Colors.grey.withValues(alpha: 0.4),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _getPhosphorIcon(_selectedIcon),
+                                          size: 20,
+                                          color: provider.isDarkMode
+                                              ? Colors.white
+                                              : const Color(0xFF333333),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          Icons.edit,
+                                          size: 16,
+                                          color: provider.isDarkMode
+                                              ? Colors.white.withValues(alpha: 0.6)
+                                              : Colors.grey.withValues(alpha: 0.7),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => _showIconSelector(),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: provider.isDarkMode
-                                    ? Colors.black.withValues(alpha: 0.2)
-                                    : Colors.white.withValues(alpha: 0.8),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: provider.isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.3)
-                                      : Colors.grey.withValues(alpha: 0.4),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _getPhosphorIcon(_selectedIcon),
-                                    size: 20,
+                          const SizedBox(width: 12),
+                          // Due Date selector
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Due Date:',
+                                  style: TextStyle(
                                     color: provider.isDarkMode
-                                        ? Colors.white
+                                        ? Colors.white.withValues(alpha: 0.8)
                                         : const Color(0xFF333333),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.edit,
-                                    size: 16,
-                                    color: provider.isDarkMode
-                                        ? Colors.white.withValues(alpha: 0.6)
-                                        : Colors.grey.withValues(alpha: 0.7),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: _selectDueDate,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: provider.isDarkMode
+                                                ? Colors.black.withValues(alpha: 0.2)
+                                                : Colors.white.withValues(alpha: 0.8),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: provider.isDarkMode
+                                                  ? Colors.white.withValues(alpha: 0.3)
+                                                  : Colors.grey.withValues(alpha: 0.4),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                PhosphorIcons.calendar(),
+                                                size: 16,
+                                                color: provider.isDarkMode
+                                                    ? Colors.white.withValues(alpha: 0.8)
+                                                    : const Color(0xFF666666),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  _selectedDueDate != null
+                                                      ? DateFormat('MMM d, y').format(_selectedDueDate!)
+                                                      : 'None',
+                                                  style: TextStyle(
+                                                    color: provider.isDarkMode
+                                                        ? Colors.white.withValues(alpha: 0.7)
+                                                        : const Color(0xFF666666),
+                                                    fontSize: 12,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (_selectedDueDate != null) ...[
+                                      const SizedBox(width: 4),
+                                      GestureDetector(
+                                        onTap: _clearDueDate,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: provider.isDarkMode
+                                                ? Colors.red.withValues(alpha: 0.3)
+                                                : const Color(0xFFFCA5A5).withValues(alpha: 0.5),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Icon(
+                                            Icons.close,
+                                            size: 14,
+                                            color: provider.isDarkMode
+                                                ? Colors.red.withValues(alpha: 0.9)
+                                                : const Color(0xFFDC2626),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ],

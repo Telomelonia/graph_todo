@@ -562,6 +562,19 @@ class CanvasProvider with ChangeNotifier {
     }
   }
 
+  // Update node due date
+  void updateNodeDueDate(String nodeId, DateTime? dueDate) {
+    final index = _nodes.indexWhere((node) => node.id == nodeId);
+    if (index != -1) {
+      _nodes[index] = _nodes[index].copyWith(
+        dueDate: dueDate,
+        clearDueDate: dueDate == null,
+      );
+      _markDirty();
+      notifyListeners();
+    }
+  }
+
   // Active buttons management
   void showNodeActionButtons(String nodeId) {
     _nodeWithActiveButtons = nodeId;

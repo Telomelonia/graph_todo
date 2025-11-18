@@ -29,6 +29,9 @@ class TodoNode {
   @HiveField(7)
   double size;
 
+  @HiveField(8)
+  DateTime? dueDate;
+
   TodoNode({
     required this.id,
     required this.text,
@@ -38,6 +41,7 @@ class TodoNode {
     this.isCompleted = false,
     this.color = const Color(0xFF6366F1), // Default indigo color
     this.size = 120.0,
+    this.dueDate,
   });
 
   // Convert to JSON for storage
@@ -51,6 +55,7 @@ class TodoNode {
       'isCompleted': isCompleted,
       'color': color.toARGB32(),
       'size': size,
+      'dueDate': dueDate?.toIso8601String(),
     };
   }
 
@@ -65,6 +70,7 @@ class TodoNode {
       isCompleted: json['isCompleted'] ?? false,
       color: Color(json['color'] ?? 0xFF6366F1),
       size: json['size']?.toDouble() ?? 100.0,
+      dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
     );
   }
 
@@ -77,6 +83,8 @@ class TodoNode {
     bool? isCompleted,
     Color? color,
     double? size,
+    DateTime? dueDate,
+    bool clearDueDate = false,
   }) {
     return TodoNode(
       id: id,
@@ -87,6 +95,7 @@ class TodoNode {
       isCompleted: isCompleted ?? this.isCompleted,
       color: color ?? this.color,
       size: size ?? this.size,
+      dueDate: clearDueDate ? null : (dueDate ?? this.dueDate),
     );
   }
 }
