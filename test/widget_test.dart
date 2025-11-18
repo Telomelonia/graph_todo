@@ -10,16 +10,16 @@ void main() {
     expect(find.byType(MaterialApp), findsOneWidget);
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(CanvasWidget), findsOneWidget);
-    
-    // Check for floating action buttons (add, connect, eraser, clear)
-    expect(find.byType(FloatingActionButton), findsNWidgets(4));
-    
+
+    // Check for floating action buttons (theme, import, export, add node, clear)
+    expect(find.byType(FloatingActionButton), findsNWidgets(5));
+
     // Check for add node button
     expect(find.byIcon(Icons.add), findsOneWidget);
-    
-    // Check for connection mode button (link icon)
-    expect(find.byIcon(Icons.link), findsOneWidget);
-    
+
+    // Check for theme toggle button (shows light_mode icon when in dark mode)
+    expect(find.byIcon(Icons.light_mode), findsOneWidget);
+
     // Check for clear button (clear_all icon)
     expect(find.byIcon(Icons.clear_all), findsOneWidget);
   });
@@ -38,23 +38,18 @@ void main() {
     expect(find.text('Click anywhere to add a new node'), findsOneWidget);
   });
 
-  testWidgets('Connection mode can be toggled', (WidgetTester tester) async {
+  testWidgets('Theme can be toggled', (WidgetTester tester) async {
     await tester.pumpWidget(const GraphTodoApp());
 
-    // Initially should show link icon (not in connect mode)
-    expect(find.byIcon(Icons.link), findsOneWidget);
-    expect(find.byIcon(Icons.close), findsNothing);
+    // Initially should show light_mode icon (app starts in dark mode, shows icon to switch to light)
+    expect(find.byIcon(Icons.light_mode), findsOneWidget);
 
-    // Tap the connection toggle button
-    await tester.tap(find.byIcon(Icons.link));
+    // Tap the theme toggle button
+    await tester.tap(find.byIcon(Icons.light_mode));
     await tester.pump();
 
-    // Now should show close icon (in connect mode)
-    expect(find.byIcon(Icons.close), findsOneWidget);
-    expect(find.byIcon(Icons.link), findsNothing);
-
-    // Should show connection mode indicator
-    expect(find.text('Select first node to connect'), findsOneWidget);
+    // Now should show dark_mode icon (switched to light mode, shows icon to switch back to dark)
+    expect(find.byIcon(Icons.dark_mode), findsOneWidget);
   });
 
   testWidgets('Clear canvas shows confirmation dialog', (WidgetTester tester) async {

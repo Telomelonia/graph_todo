@@ -42,8 +42,8 @@ void main() {
       provider.addNode(const Offset(10, 20), viewSize: viewSize);
 
       expect(provider.nodes.length, equals(1));
-      // 14% of the smaller dimension (800) = 112.0
-      expect(provider.nodes.first.size, closeTo(112.0, 0.001));
+      // 20% of the smaller dimension (800) = 160.0
+      expect(provider.nodes.first.size, closeTo(160.0, 0.001));
     });
 
     test('addNode automatically exits add node mode', () {
@@ -133,10 +133,10 @@ void main() {
       expect(provider.scale, equals(2.0));
 
       provider.updateScale(0.05);
-      expect(provider.scale, equals(0.1)); // clamped to min
+      expect(provider.scale, equals(0.3)); // clamped to min
 
-      provider.updateScale(10.0);
-      expect(provider.scale, equals(5.0)); // clamped to max
+      provider.updateScale(15.0);
+      expect(provider.scale, equals(10.0)); // clamped to max
     });
 
     test('toggleConnectMode changes connect mode state', () {
@@ -294,6 +294,191 @@ void main() {
       expect(provider.isConnectMode, isFalse);
       expect(provider.selectedNodeForConnection, isNull);
       expect(provider.draggedNode, isNull);
+    });
+
+    test('updateNodeDescription modifies node description', () {
+      provider.addNode(const Offset(10, 20), text: 'Test');
+      final nodeId = provider.nodes.first.id;
+
+      provider.updateNodeDescription(nodeId, 'New description');
+
+      expect(provider.nodes.first.description, equals('New description'));
+    });
+
+    test('updateNodeDescription ignores non-existent node', () {
+      provider.addNode(const Offset(10, 20), text: 'Test');
+
+      provider.updateNodeDescription('non-existent', 'New description');
+
+      expect(provider.nodes.first.description, equals(''));
+    });
+
+    test('updateNodeIcon modifies node icon', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.updateNodeIcon(nodeId, 'heart');
+
+      expect(provider.nodes.first.icon, equals('heart'));
+    });
+
+    test('updateNodeIcon ignores non-existent node', () {
+      provider.addNode(const Offset(10, 20));
+      final originalIcon = provider.nodes.first.icon;
+
+      provider.updateNodeIcon('non-existent', 'heart');
+
+      expect(provider.nodes.first.icon, equals(originalIcon));
+    });
+
+    test('updateNodeColor modifies node color', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.updateNodeColor(nodeId, Colors.red);
+
+      expect(provider.nodes.first.color, equals(Colors.red));
+    });
+
+    test('updateNodeColor ignores non-existent node', () {
+      provider.addNode(const Offset(10, 20));
+      final originalColor = provider.nodes.first.color;
+
+      provider.updateNodeColor('non-existent', Colors.red);
+
+      expect(provider.nodes.first.color, equals(originalColor));
+    });
+
+    test('toggleTheme changes theme state', () {
+      final initialTheme = provider.isDarkMode;
+
+      provider.toggleTheme();
+
+      expect(provider.isDarkMode, equals(!initialTheme));
+
+      provider.toggleTheme();
+
+      expect(provider.isDarkMode, equals(initialTheme));
+    });
+
+    test('showNodeInfo sets selected node for info', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.showNodeInfo(nodeId);
+
+      expect(provider.nodeShowingInfo, equals(nodeId));
+    });
+
+    test('hideNodeInfo clears selected node for info', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.showNodeInfo(nodeId);
+      expect(provider.nodeShowingInfo, isNotNull);
+
+      provider.hideNodeInfo();
+      expect(provider.nodeShowingInfo, isNull);
+    });
+
+    test('toggleAddNodeMode changes add node mode state', () {
+      expect(provider.isAddNodeMode, isFalse);
+
+      provider.toggleAddNodeMode();
+
+      expect(provider.isAddNodeMode, isTrue);
+
+      provider.toggleAddNodeMode();
+
+      expect(provider.isAddNodeMode, isFalse);
+    });
+
+    test('toggleEraserMode changes eraser mode state', () {
+      expect(provider.isEraserMode, isFalse);
+
+      provider.toggleEraserMode();
+
+      expect(provider.isEraserMode, isTrue);
+
+      provider.toggleEraserMode();
+
+      expect(provider.isEraserMode, isFalse);
+    });
+
+    test('removeConnection removes connection by id', () {
+      provider.addNode(const Offset(10, 20));
+      provider.addNode(const Offset(30, 40));
+      final node1Id = provider.nodes[0].id;
+      final node2Id = provider.nodes[1].id;
+
+      provider.createConnection(node1Id, node2Id);
+      expect(provider.connections.length, equals(1));
+
+      final connectionId = provider.connections.first.id;
+      provider.removeConnection(connectionId);
+
+      expect(provider.connections.length, equals(0));
+    });
+
+    test('removeConnection ignores non-existent connection', () {
+      provider.addNode(const Offset(10, 20));
+      provider.addNode(const Offset(30, 40));
+      provider.createConnection(provider.nodes[0].id, provider.nodes[1].id);
+
+      provider.removeConnection('non-existent');
+
+      expect(provider.connections.length, equals(1));
+    });
+
+    test('multiple nodes can be added', () {
+      provider.addNode(const Offset(10, 20));
+      provider.addNode(const Offset(30, 40));
+      provider.addNode(const Offset(50, 60));
+
+      expect(provider.nodes.length, equals(3));
+    });
+
+    test('nodes have unique ids', () {
+      provider.addNode(const Offset(10, 20));
+      provider.addNode(const Offset(30, 40));
+      provider.addNode(const Offset(50, 60));
+
+      final ids = provider.nodes.map((n) => n.id).toSet();
+      expect(ids.length, equals(3));
+    });
+
+    test('updateNodePosition updates multiple times', () {
+      provider.addNode(const Offset(10, 20));
+      final nodeId = provider.nodes.first.id;
+
+      provider.updateNodePosition(nodeId, const Offset(30, 40));
+      expect(provider.nodes.first.position, equals(const Offset(30, 40)));
+
+      provider.updateNodePosition(nodeId, const Offset(50, 60));
+      expect(provider.nodes.first.position, equals(const Offset(50, 60)));
+    });
+
+    test('connection state updates when node completion changes', () {
+      provider.addNode(const Offset(10, 20));
+      provider.addNode(const Offset(30, 40));
+      final node1Id = provider.nodes[0].id;
+      final node2Id = provider.nodes[1].id;
+
+      provider.createConnection(node1Id, node2Id);
+
+      // Initially not green
+      expect(provider.connections.first.isGreen, isFalse);
+
+      // Complete both nodes
+      provider.toggleNodeCompletion(node1Id);
+      provider.toggleNodeCompletion(node2Id);
+
+      expect(provider.connections.first.isGreen, isTrue);
+
+      // Uncomplete one node
+      provider.toggleNodeCompletion(node1Id);
+
+      expect(provider.connections.first.isGreen, isFalse);
     });
   });
 }

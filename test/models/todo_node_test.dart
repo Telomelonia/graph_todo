@@ -16,13 +16,17 @@ void main() {
       expect(node.position, equals(const Offset(10, 20)));
       expect(node.isCompleted, isFalse);
       expect(node.color, equals(const Color(0xFF6366F1)));
-      expect(node.size, equals(60.0));
+      expect(node.size, equals(120.0));
+      expect(node.description, equals(''));
+      expect(node.icon, equals('target'));
     });
 
     test('creates node with custom values', () {
       final node = TodoNode(
         id: 'custom-id',
         text: 'Custom task',
+        description: 'Custom description',
+        icon: 'heart',
         position: const Offset(30, 40),
         isCompleted: true,
         color: Colors.red,
@@ -32,6 +36,8 @@ void main() {
       expect(node.isCompleted, isTrue);
       expect(node.color, equals(Colors.red));
       expect(node.size, equals(80.0));
+      expect(node.description, equals('Custom description'));
+      expect(node.icon, equals('heart'));
     });
 
     test('copyWith updates specified fields', () {
@@ -122,7 +128,7 @@ void main() {
 
       expect(node.isCompleted, isFalse);
       expect(node.color, equals(const Color(0xFF6366F1)));
-      expect(node.size, equals(60.0));
+      expect(node.size, equals(100.0));
     });
 
     test('roundtrip serialization preserves data', () {
@@ -144,6 +150,130 @@ void main() {
       expect(restored.isCompleted, equals(original.isCompleted));
       expect(restored.color, equals(original.color));
       expect(restored.size, equals(original.size));
+    });
+
+    test('creates node with custom icon', () {
+      final node = TodoNode(
+        id: 'test-id',
+        text: 'Test task',
+        icon: 'code',
+        position: const Offset(10, 20),
+      );
+
+      expect(node.icon, equals('code'));
+    });
+
+    test('creates node with description', () {
+      final node = TodoNode(
+        id: 'test-id',
+        text: 'Test task',
+        description: 'This is a test description',
+        position: const Offset(10, 20),
+      );
+
+      expect(node.description, equals('This is a test description'));
+    });
+
+    test('copyWith updates icon', () {
+      final original = TodoNode(
+        id: 'test-id',
+        text: 'Original text',
+        icon: 'target',
+        position: const Offset(10, 20),
+      );
+
+      final updated = original.copyWith(icon: 'heart');
+
+      expect(updated.icon, equals('heart'));
+      expect(updated.text, equals('Original text')); // unchanged
+    });
+
+    test('copyWith updates description', () {
+      final original = TodoNode(
+        id: 'test-id',
+        text: 'Original text',
+        description: 'Original description',
+        position: const Offset(10, 20),
+      );
+
+      final updated = original.copyWith(description: 'New description');
+
+      expect(updated.description, equals('New description'));
+      expect(updated.text, equals('Original text')); // unchanged
+    });
+
+    test('toJson includes icon and description', () {
+      final node = TodoNode(
+        id: 'test-id',
+        text: 'Test task',
+        description: 'Test description',
+        icon: 'star',
+        position: const Offset(10.5, 20.7),
+      );
+
+      final json = node.toJson();
+
+      expect(json['description'], equals('Test description'));
+      expect(json['icon'], equals('star'));
+    });
+
+    test('fromJson deserializes icon and description', () {
+      final json = {
+        'id': 'test-id',
+        'text': 'Test task',
+        'description': 'Test description',
+        'icon': 'heart',
+        'position': {'dx': 10.5, 'dy': 20.7},
+      };
+
+      final node = TodoNode.fromJson(json);
+
+      expect(node.description, equals('Test description'));
+      expect(node.icon, equals('heart'));
+    });
+
+    test('fromJson handles missing description', () {
+      final json = {
+        'id': 'test-id',
+        'text': 'Test task',
+        'position': {'dx': 10.0, 'dy': 20.0},
+      };
+
+      final node = TodoNode.fromJson(json);
+
+      expect(node.description, equals(''));
+    });
+
+    test('fromJson handles missing icon', () {
+      final json = {
+        'id': 'test-id',
+        'text': 'Test task',
+        'position': {'dx': 10.0, 'dy': 20.0},
+      };
+
+      final node = TodoNode.fromJson(json);
+
+      expect(node.icon, equals('target'));
+    });
+
+    test('roundtrip serialization preserves icon and description', () {
+      final original = TodoNode(
+        id: 'test-id',
+        text: 'Test task',
+        description: 'Detailed description',
+        icon: 'trophy',
+        position: const Offset(10.5, 20.7),
+        isCompleted: true,
+        color: const Color(0xFFFF0000),
+        size: 75.0,
+      );
+
+      final json = original.toJson();
+      final restored = TodoNode.fromJson(json);
+
+      expect(restored.description, equals(original.description));
+      expect(restored.icon, equals(original.icon));
+      expect(restored.text, equals(original.text));
     });
   });
 }
