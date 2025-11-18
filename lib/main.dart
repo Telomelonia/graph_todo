@@ -177,8 +177,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                           heroTag: "menu",
                           onPressed: _toggleMenu,
                           backgroundColor: provider.isDarkMode
-                              ? Colors.purple
-                              : const Color(0xFFC4B5FD),
+                              ? const Color(0xFF2D2D2D)
+                              : Colors.white,
                           child: AnimatedIcon(
                             icon: AnimatedIcons.menu_close,
                             progress: _menuAnimation,
@@ -248,10 +248,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
             // Icon button
             FloatingActionButton(
               heroTag: "menu_$label",
-              mini: true,
               onPressed: onTap,
               backgroundColor: color,
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Icon(icon, color: iconColor, size: 24),
             ),
           ],
         ),
