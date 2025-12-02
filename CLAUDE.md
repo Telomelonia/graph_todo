@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 GraphTodo is a Flutter application that implements an interactive graph-based todo management system. Users can create todo nodes on a canvas, connect them to show relationships, and visualize task completion through golden connections when both linked tasks are completed.
 
-**Current Version**: v0.5.0+ (evolved from v0.4.1)
+**Current Version**: v0.7.0+ (with cloud sync)
 **Target Platforms**: iOS, Android, Web, macOS, Windows
 **Flutter SDK**: ^3.8.0
 
@@ -71,11 +71,19 @@ GraphTodo is a Flutter application that implements an interactive graph-based to
 
 **State Management** (`lib/providers/`):
 - `CanvasProvider` (`canvas_provider.dart`): Centralized state management using Provider pattern
+- `AuthProvider` (`auth_provider.dart`): Authentication state management with Auth0
+- `SyncProvider` (`sync_provider.dart`): Cloud sync state management with progress tracking
 
 **Data Persistence** (`lib/services/`):
 - `HiveStorageService` (`hive_storage_service.dart`): Hive-based local storage for automatic data persistence
+- `AuthService` (`auth_service.dart`): Auth0 authentication service with secure token storage
+- `MongoDBSyncService` (`mongodb_sync_service.dart`): Cloud sync service using MongoDB Atlas
 - Stores nodes and connections in local Hive boxes with auto-save functionality
-- Supports data import/export as JSON files for backup and cross-device sync
+- Supports cloud sync with Auth0 authentication for multi-device access
+- Supports data import/export as JSON files for backup
+
+**Configuration** (`lib/config/`):
+- `AppConfig` (`app_config.dart`): Auth0 and MongoDB credentials configuration
 
 ### Key Features
 
@@ -117,6 +125,16 @@ GraphTodo is a Flutter application that implements an interactive graph-based to
 - Improved sensitivity and interaction responsiveness
 - Dark/light theme support with automatic color conversion
 
+**Cloud Sync Features** (v0.7.0+):
+- Multi-device sync using MongoDB Atlas (free tier)
+- Auth0 authentication for secure user data isolation
+- Hybrid local-first architecture (works offline with Hive)
+- Manual sync with pull-to-refresh in hamburger menu
+- Sync status indicators (syncing, synced, error states)
+- Automatic conflict resolution (last-write-wins strategy)
+- User login/logout with profile display
+- Network connectivity monitoring
+
 ### Dependencies
 
 **Production Dependencies**:
@@ -129,6 +147,11 @@ GraphTodo is a Flutter application that implements an interactive graph-based to
 - `file_picker ^8.1.2` - File selection for import/export functionality
 - `path_provider ^2.1.1` - Access to platform-specific storage locations
 - `shared_preferences ^2.2.2` - Simple key-value storage (legacy support)
+- `auth0_flutter ^1.7.2` - Auth0 authentication SDK for user login
+- `mongo_dart ^0.10.3` - MongoDB client for Dart/Flutter
+- `http ^1.1.0` - HTTP client for API requests
+- `flutter_secure_storage ^9.0.0` - Secure storage for authentication tokens
+- `connectivity_plus ^5.0.2` - Network connectivity monitoring
 
 **Development Dependencies**:
 - `flutter_lints ^3.0.0` - Dart linting rules for code quality
@@ -182,7 +205,163 @@ The project includes comprehensive test coverage organized by component type:
 - Use widget tests for UI components
 - Unit test business logic in providers and models
 
+## Cloud Sync Setup (v0.7.0+)
+
+### Prerequisites
+Before using cloud sync, you need to set up:
+1. MongoDB Atlas account (free tier)
+2. Auth0 account (free tier)
+3. Update configuration in `lib/config/app_config.dart`
+
+### Step 1: MongoDB Atlas Setup
+
+1. **Create Account & Cluster**:
+   - Go to https://www.mongodb.com/cloud/atlas
+   - Sign up for a free account
+   - Create a new cluster (M0 free tier - 512MB storage)
+   - Choose cloud provider and region closest to you
+
+2. **Create Database User**:
+   - Navigate to "Database Access" in left sidebar
+   - Click "Add New Database User"
+   - Choose "Password" authentication
+   - Create username and strong password
+   - Set role to "Read and write to any database"
+   - Save credentials securely
+
+3. **Configure Network Access**:
+   - Navigate to "Network Access" in left sidebar
+   - Click "Add IP Address"
+   - Add `0.0.0.0/0` to allow access from anywhere (required for mobile apps)
+   - Note: For production, consider more restrictive rules
+
+4. **Get Connection String**:
+   - Navigate to "Database" in left sidebar
+   - Click "Connect" on your cluster
+   - Choose "Connect your application"
+   - Copy the connection string
+   - Format: `mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/<database>?retryWrites=true&w=majority`
+   - Replace `<username>` and `<password>` with your database user credentials
+   - Replace `<database>` with `graphtodo`
+
+### Step 2: Auth0 Setup
+
+1. **Create Account & Application**:
+   - Go to https://auth0.com
+   - Sign up for a free account
+   - Navigate to "Applications" > "Create Application"
+   - Name it "GraphTodo"
+   - Choose "Native" as application type
+
+2. **Configure Application**:
+   - In Application Settings, note your:
+     - Domain (e.g., `your-tenant.us.auth0.com`)
+     - Client ID
+   - Scroll to "Application URIs"
+   - Add Allowed Callback URLs: `graphtodo://callback`
+   - Add Allowed Logout URLs: `graphtodo://logout`
+   - Click "Save Changes"
+
+3. **Platform-Specific Configuration**:
+
+   **iOS**:
+   - Add to `ios/Runner/Info.plist`:
+   ```xml
+   <key>CFBundleURLTypes</key>
+   <array>
+     <dict>
+       <key>CFBundleTypeRole</key>
+       <string>None</string>
+       <key>CFBundleURLName</key>
+       <string>auth0</string>
+       <key>CFBundleURLSchemes</key>
+       <array>
+         <string>graphtodo</string>
+       </array>
+     </dict>
+   </array>
+   ```
+
+   **Android**:
+   - Add to `android/app/src/main/AndroidManifest.xml` inside `<application>`:
+   ```xml
+   <activity
+     android:name="com.auth0.flutter.auth0_flutter.Auth0FlutterActivity"
+     android:exported="true">
+     <intent-filter>
+       <action android:name="android.intent.action.VIEW" />
+       <category android:name="android.intent.category.DEFAULT" />
+       <category android:name="android.intent.category.BROWSABLE" />
+       <data
+         android:scheme="graphtodo"
+         android:host="callback" />
+     </intent-filter>
+   </activity>
+   ```
+
+### Step 3: Update Configuration
+
+Edit `lib/config/app_config.dart` and replace the placeholder values:
+
+```dart
+static const String auth0Domain = 'your-tenant.us.auth0.com';
+static const String auth0ClientId = 'your-client-id-here';
+static const String mongoDBConnectionString =
+  'mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/graphtodo?retryWrites=true&w=majority';
+```
+
+### Step 4: Test Cloud Sync
+
+1. Run the app: `flutter run`
+2. Open hamburger menu
+3. Click "Login" button
+4. Authenticate with Auth0
+5. Create some nodes and connections
+6. Click the sync button (refresh icon)
+7. Install app on another device
+8. Login with same account
+9. Click sync to download your data
+
+### Security Notes
+
+- **Never commit credentials**: Add `lib/config/app_config.dart` to `.gitignore` if sharing code
+- **Token Storage**: Auth0 tokens are securely stored using `flutter_secure_storage`
+- **Data Isolation**: Each user's data is automatically filtered by their Auth0 user ID
+- **HTTPS**: All communication with MongoDB Atlas uses TLS encryption
+
+### Troubleshooting
+
+**"Auth0 not configured" error**:
+- Check that you've updated `app_config.dart` with real values
+- Ensure values don't contain placeholder text
+
+**"MongoDB connection failed"**:
+- Verify connection string is correct (username, password, cluster URL)
+- Check MongoDB Atlas network access allows your IP (0.0.0.0/0)
+- Ensure database user has correct permissions
+
+**"Login failed"**:
+- Verify Auth0 callback URLs are configured correctly
+- Check platform-specific configuration (Info.plist for iOS, AndroidManifest.xml for Android)
+- Ensure Auth0 domain and client ID are correct
+
+**Sync not working**:
+- Check internet connectivity
+- Ensure you're logged in (check hamburger menu)
+- Look for error messages in sync status indicator
+
 ## Recent Improvements (v0.5.0+)
+
+### v0.7.0 - Cloud Sync Feature (December 2025)
+- **Multi-Device Sync**: Added MongoDB Atlas integration for cloud storage
+- **Auth0 Authentication**: Secure user authentication with Auth0
+- **Hybrid Architecture**: Local-first with Hive, optional cloud sync
+- **Manual Sync**: Pull-to-refresh style sync in hamburger menu
+- **Sync Status**: Real-time sync indicators (syncing, synced, error)
+- **Offline Support**: App works fully offline, syncs when online
+- **User Isolation**: Each user's data is private and filtered by Auth0 ID
+- **Network Monitoring**: Automatic connectivity detection
+- **Technical**: New `AuthService`, `MongoDBSyncService`, `AuthProvider`, `SyncProvider`, `AppConfig`
 
 ### v0.6.0 - Due Date Feature (November 2025)
 - **Due Date Management**: Added optional due date field to TodoNode model with Hive persistence

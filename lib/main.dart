@@ -3,18 +3,27 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'providers/canvas_provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/sync_provider.dart';
 import 'widgets/todo_node_widget.dart';
 import 'widgets/connection_painter.dart';
 import 'widgets/interactive_connection_widget.dart';
 import 'widgets/connection_endpoint_widget.dart';
 import 'widgets/info_panel_widget.dart';
 import 'widgets/ordered_todo_list_widget.dart';
+import 'widgets/auth_wrapper.dart';
 import 'services/hive_storage_service.dart';
+import 'services/auth_service.dart';
+import 'config/app_config.dart';
 
 void main() async {
   // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables from .env file
+  await dotenv.load(fileName: '.env');
 
   // Hide Android status bar for immersive experience
   if (defaultTargetPlatform == TargetPlatform.android) {
@@ -35,17 +44,43 @@ class GraphTodoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'GraphTodo - Visual Task Manager',
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        useMaterial3: true,
+    return MultiProvider(
+      providers: [
+        // Canvas provider for todo nodes and connections
+        ChangeNotifierProvider(
+          create: (context) => CanvasProvider(),
+        ),
+        // Auth provider for user authentication
+        ChangeNotifierProvider(
+          create: (context) => AuthProvider(
+            authService: AuthService.create(
+              domain: AppConfig.auth0Domain,
+              clientId: AppConfig.auth0ClientId,
+            ),
+          ),
+        ),
+        // Sync provider for cloud synchronization
+        ChangeNotifierProxyProvider<AuthProvider, SyncProvider>(
+          create: (context) => SyncProvider(
+            authService: AuthService.create(
+              domain: AppConfig.auth0Domain,
+              clientId: AppConfig.auth0ClientId,
+            ),
+          ),
+          update: (context, authProvider, syncProvider) => syncProvider!,
+        ),
+      ],
+      child: MaterialApp(
+        title: 'GraphTodo - Visual Task Manager',
+        theme: ThemeData(
+          primarySwatch: Colors.indigo,
+          useMaterial3: true,
+        ),
+        home: const AuthWrapper(
+          child: HomePage(),
+        ),
+        debugShowCheckedModeBanner: false,
       ),
-      home: ChangeNotifierProvider(
-        create: (context) => CanvasProvider(),
-        child: const HomePage(),
-      ),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -214,6 +249,102 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             },
                             index: 4,
                           ),
+                          const SizedBox(height: 8),
+                          // Sync button (only for authenticated users, not guests)
+                          Consumer2<AuthProvider, SyncProvider>(
+                            builder: (context, authProvider, syncProvider, child) {
+                              // Hide sync button for guest users
+                              if (authProvider.isGuestMode) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return _buildMenuItem(
+                                icon: syncProvider.status == SyncStatus.syncing
+                                    ? Icons.sync
+                                    : Icons.cloud_sync,
+                                label: syncProvider.statusMessage,
+                                color: syncProvider.status == SyncStatus.success
+                                    ? (provider.isDarkMode ? Colors.green : const Color(0xFF6EE7B7))
+                                    : syncProvider.status == SyncStatus.error
+                                        ? (provider.isDarkMode ? Colors.red : const Color(0xFFFCA5A5))
+                                        : (provider.isDarkMode ? Colors.purple : const Color(0xFFC4B5FD)),
+                                iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
+                                onTap: syncProvider.status == SyncStatus.syncing
+                                    ? () {} // Disabled while syncing
+                                    : () async {
+                                        final result = await syncProvider.sync(
+                                          localNodes: provider.nodes,
+                                          localConnections: provider.connections,
+                                        );
+
+                                        if (result != null && context.mounted) {
+                                          // Merge cloud data with local
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Sync complete!\nUploaded: ${syncProvider.uploadedNodes} nodes, ${syncProvider.uploadedConnections} connections\n'
+                                                'Downloaded: ${syncProvider.downloadedNodes} nodes, ${syncProvider.downloadedConnections} connections',
+                                              ),
+                                              backgroundColor: Colors.green,
+                                              duration: const Duration(seconds: 3),
+                                            ),
+                                          );
+                                        } else if (syncProvider.error != null && context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(syncProvider.error!),
+                                              backgroundColor: Colors.red,
+                                              duration: const Duration(seconds: 3),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                index: 5,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          // Logout button
+                          Consumer<AuthProvider>(
+                            builder: (context, authProvider, child) {
+                              final isGuest = authProvider.isGuestMode;
+                              return _buildMenuItem(
+                                icon: isGuest ? Icons.exit_to_app : Icons.logout,
+                                label: isGuest
+                                    ? 'Exit Guest Mode'
+                                    : 'Logout (${authProvider.userName ?? "User"})',
+                                color: provider.isDarkMode ? Colors.grey[700]! : const Color(0xFFE5E7EB),
+                                iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
+                                onTap: () async {
+                                  _toggleMenu();
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text(isGuest ? 'Exit Guest Mode' : 'Logout'),
+                                      content: Text(isGuest
+                                          ? 'Exit guest mode and return to login screen?'
+                                          : 'Are you sure you want to logout?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          child: Text(isGuest ? 'Exit' : 'Logout'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirmed == true && context.mounted) {
+                                    await authProvider.logout();
+                                  }
+                                },
+                                index: 6,
+                              );
+                            },
+                          ),
                           const SizedBox(height: 12),
                         ],
                         // Hamburger menu button (always visible)
@@ -254,8 +385,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         CurvedAnimation(
           parent: _menuAnimationController,
           curve: Interval(
-            index * 0.1,
-            0.5 + (index * 0.1),
+            (index * 0.05).clamp(0.0, 0.5),
+            (0.5 + (index * 0.05)).clamp(0.5, 1.0),
             curve: Curves.easeOut,
           ),
         ),
