@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/canvas_provider.dart';
 import 'widgets/todo_node_widget.dart';
@@ -14,6 +15,14 @@ import 'services/hive_storage_service.dart';
 void main() async {
   // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Hide Android status bar for immersive experience
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.immersiveSticky,
+      overlays: [],
+    );
+  }
 
   // Initialize Hive storage service
   await HiveStorageService.initialize();
@@ -130,7 +139,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             label: provider.isDarkMode ? 'Light Mode' : 'Dark Mode',
                             color: provider.isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
                             iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
-                            onTap: provider.toggleTheme,
+                            onTap: () {
+                              provider.toggleTheme();
+                              _toggleMenu();
+                            },
                             index: 0,
                           ),
                           const SizedBox(height: 8),
@@ -139,7 +151,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             label: 'Import Data',
                             color: provider.isDarkMode ? Colors.blue : const Color(0xFF7DD3FC),
                             iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
-                            onTap: () => _handleImport(context, provider),
+                            onTap: () {
+                              _toggleMenu();
+                              _handleImport(context, provider);
+                            },
                             index: 1,
                           ),
                           const SizedBox(height: 8),
@@ -148,7 +163,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             label: 'Export Data',
                             color: provider.isDarkMode ? Colors.orange : const Color(0xFFFDBA74),
                             iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
-                            onTap: () => _handleExport(context, provider),
+                            onTap: () {
+                              _toggleMenu();
+                              _handleExport(context, provider);
+                            },
                             index: 2,
                           ),
                           const SizedBox(height: 8),
@@ -159,7 +177,10 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                                 ? (provider.isDarkMode ? Colors.grey : const Color(0xFFD1D5DB))
                                 : (provider.isDarkMode ? Colors.green : const Color(0xFF6EE7B7)),
                             iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
-                            onTap: provider.toggleAddNodeMode,
+                            onTap: () {
+                              provider.toggleAddNodeMode();
+                              _toggleMenu();
+                            },
                             index: 3,
                           ),
                           const SizedBox(height: 8),
@@ -169,6 +190,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                             color: provider.isDarkMode ? Colors.red : const Color(0xFFFCA5A5),
                             iconColor: provider.isDarkMode ? Colors.white : const Color(0xFF333333),
                             onTap: () {
+                              _toggleMenu();
                               showDialog(
                                 context: context,
                                 builder: (context) => AlertDialog(

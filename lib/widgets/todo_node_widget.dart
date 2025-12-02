@@ -22,10 +22,13 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
   late AnimationController _glowController;
   late AnimationController _pulseController;
   late AnimationController _longPressGlowController;
+  late AnimationController _growController;
   late Animation<double> _glowAnimation;
   late Animation<double> _pulseAnimation;
   late Animation<double> _longPressGlowAnimation;
+  late Animation<double> _growAnimation;
   bool _isLongPressing = false;
+  bool _hasGrown = false;
 
   @override
   void initState() {
@@ -70,18 +73,40 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
       curve: Curves.easeOut,
     ));
 
+    // Setup grow animation with bounce effect for new nodes
+    _growController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _growAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _growController,
+      curve: Curves.elasticOut,
+    ));
+
     // Start animations if node is completed
     if (widget.node.isCompleted) {
       _glowController.forward();
       _pulseController.repeat(reverse: true);
     }
 
-    // Check if this is a newly created node that should open info panel
+    // Check if this is a newly created node that should open info panel and animate
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<CanvasProvider>();
       if (provider.newlyCreatedNodeId == widget.node.id) {
         provider.showNodeInfo(widget.node.id);
         provider.clearNewlyCreatedFlag();
+        // Start grow animation for new nodes
+        if (!_hasGrown) {
+          _growController.forward();
+          _hasGrown = true;
+        }
+      } else {
+        // For existing nodes, skip animation
+        _growController.value = 1.0;
+        _hasGrown = true;
       }
     });
   }
@@ -108,6 +133,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
     _glowController.dispose();
     _pulseController.dispose();
     _longPressGlowController.dispose();
+    _growController.dispose();
     super.dispose();
   }
 
@@ -469,9 +495,11 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                   context.read<CanvasProvider>().endDrag();
                 },
                 child: AnimatedBuilder(
-                  animation: Listenable.merge([_glowAnimation, _pulseAnimation, _longPressGlowAnimation]),
+                  animation: Listenable.merge([_glowAnimation, _pulseAnimation, _longPressGlowAnimation, _growAnimation]),
                   builder: (context, child) {
-                    return Container(
+                    return Transform.scale(
+                      scale: _growAnimation.value,
+                      child: Container(
                       width: scaledSize,
                       height: scaledSize,
                       decoration: BoxDecoration(
@@ -495,6 +523,7 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
                         ) : null,
                       ),
                       child: _buildContent(provider.scale, provider.isDarkMode),
+                      ),
                     );
                   },
                 ),
@@ -792,12 +821,12 @@ class _TodoNodeWidgetState extends State<TodoNodeWidget>
         bottom: 20.0 + (index * (buttonSize + buttonSpacing)),
         child: AnimatedScale(
           scale: 1.0,
-          duration: Duration(milliseconds: 300 + (index * 75)),
-          curve: Curves.elasticOut,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOutCubic,
           child: AnimatedOpacity(
             opacity: 1.0,
-            duration: Duration(milliseconds: 200 + (index * 50)),
-            curve: Curves.easeOut,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOutCubic,
             child: FloatingActionButton(
               heroTag: heroTag,
               onPressed: onTap,

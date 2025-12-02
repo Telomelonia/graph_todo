@@ -386,18 +386,21 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
   Widget build(BuildContext context) {
     final provider = Provider.of<CanvasProvider>(context, listen: false);
     final screenSize = MediaQuery.of(context).size;
-    
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     // Calculate responsive panel dimensions
     final panelWidth = (screenSize.width * 0.85).clamp(280.0, 400.0);
-    final panelHeight = (screenSize.height * 0.7).clamp(300.0, 500.0);
-    
+    // Adjust panel height to account for keyboard
+    final availableHeight = screenSize.height - keyboardHeight;
+    final panelHeight = (availableHeight * 0.7).clamp(300.0, 500.0);
+
     // Calculate ideal positions to center both node and panel in view
     final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
-    
+
     // For mobile screens (narrow), position panel below the centered node
     // For larger screens, position panel to the side
     final isMobile = screenSize.width < 600;
-    
+
     late double panelLeft;
     late double panelTop;
     late Offset nodeTargetPosition;
@@ -409,7 +412,12 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
       // Mobile layout: node at top center, panel below
       nodeTargetPosition = Offset(screenCenter.dx, screenSize.height * 0.25);
       panelLeft = (screenSize.width - panelWidth) / 2;
-      panelTop = screenSize.height * 0.45;
+      // Adjust panel position when keyboard is visible
+      if (keyboardHeight > 0) {
+        panelTop = 20.0; // Move to top when keyboard is shown
+      } else {
+        panelTop = screenSize.height * 0.45;
+      }
     } else {
       // Desktop layout: node on left, panel on right, both centered vertically
       nodeTargetPosition = Offset(screenSize.width * 0.3, screenCenter.dy);
@@ -422,9 +430,9 @@ class _InfoPanelWidgetState extends State<InfoPanelWidget> {
       }
     }
 
-    // Ensure panel fits on screen
+    // Ensure panel fits on screen accounting for keyboard
     panelLeft = panelLeft.clamp(20.0, screenSize.width - panelWidth - 20);
-    panelTop = panelTop.clamp(20.0, screenSize.height - panelHeight - 20);
+    panelTop = panelTop.clamp(20.0, availableHeight - panelHeight - 20);
 
     // Auto-adjust view to center node (without changing zoom level)
     WidgetsBinding.instance.addPostFrameCallback((_) {
